@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E '\\\\.\\(ts|tsx|js|jsx|json|prisma|md\\)$')",
+      "Bash(node -e \"const p=require\\('./package.json'\\); const missing=[]; ['@types/pdfkit'].forEach\\(d=>{ if\\(!p.devDependencies[d] && !p.dependencies[d]\\) missing.push\\(d\\)}\\); console.log\\('Missing:', missing.join\\(', '\\) || 'none'\\)\")",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:5173)",
+      "Read(//c/Users/karen/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/2b917c9d-4400-40d3-92cb-3acbad941bcc/2c6bbe2e-47ca-482c-8cda-e4ba0056db82/skills/docx/**)",
+      "Bash(pandoc --track-changes=all \"C:\\\\Users\\\\karen\\\\OneDrive - INSTITUTO SUPERIOR TECNOLOGICO MAYOR PEDRO TRAVERSARI\\\\Escritorio\\\\TESIS\\\\esquema actualizado.docx\" -o output.md)",
+      "Bash(python scripts/office/unpack.py \"C:\\\\Users\\\\karen\\\\OneDrive - INSTITUTO SUPERIOR TECNOLOGICO MAYOR PEDRO TRAVERSARI\\\\Escritorio\\\\TESIS\\\\esquema actualizado.docx\" unpacked_tesis/)",
+      "Bash(pip install *)",
+      "Bash(python -c ' *)",
+      "WebFetch(domain:institutotraversari.edu.ec)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":4000\")",
+      "Bash(tasklist /fi \"PID eq 10608\" /fo list)",
+      "PowerShell($ports = netstat -ano | Select-String \":4000 \"; $ports | ForEach-Object { $pid = \\($_ -split '\\\\s+'\\)[-1]; if \\($pid -match '^\\\\d+$'\\) { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue; Write-Host \"Killed PID $pid\" } })"
+    ]
+  }
+}

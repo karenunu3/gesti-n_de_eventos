@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  SECRETARIA
+  DOCENTE
+  ALUMNO
+}
+
+model Career {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  users     User[]
+  events    Event[]  @relation("EventCareers")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  dni       String   @unique
+  role      Role     @default(ALUMNO)
+  
+  careerId  Int?
+  career    Career?  @relation(fields: [careerId], references: [id])
+
+  resetToken       String?
+  resetTokenExpiry DateTime?
+
+  registrations EventRegistration[]
+  attendances   EventAttendance[]
+  certificates  Certificate[]
+  surveys       Survey[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  capacity    Int?
+  hours       Int      @default(1)
+  
+  latitude    Float?
+  longitude   Float?
+  radiusMeters Int     @default(100)
+  
+  isTransversal Boolean @default(true)
+
+  careers       Career[] @relation("EventCareers")
+  registrations EventRegistration[]
+  attendances   EventAttendance[]
+  certificates  Certificate[]
+  surveys       Survey[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EventRegistration {
+  id        Int      @id @default(autoincrement())
+  eventId   Int
+  userId    Int
+  event     Event    @relation(fields: [eventId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  
+  registeredAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+}
+
+model EventAttendance {
+  id        Int      @id @default(autoincrement())
+  eventId   Int
+  userId    Int
+  event     Event    @relation(fields: [eventId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  
+  photoUrl  String   
+  latitude  Float
+  longitude Float
+  isValid   Boolean  @default(true) 
+  
+  recordedAt DateTime @default(now()) // Hora de Check-In
+  
+  checkOutAt        DateTime?         // Hora de Check-Out
+  checkOutLatitude  Float?
+  checkOutLongitude Float?
+  isCheckOutValid   Boolean?
+
+  @@unique([eventId, userId])
+}
+
+model Certificate {
+  id          Int      @id @default(autoincrement())
+  certificateCode String @unique @default(uuid())
+  eventId     Int
+  userId      Int
+  event       Event    @relation(fields: [eventId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  hoursGranted Int
+  pdfUrl      String?  
+  issuedAt    DateTime @default(now())
+
+  @@unique([eventId, userId])
+}
+
+model Survey {
+  id        Int      @id @default(autoincrement())
+  eventId   Int
+  userId    Int
+  event     Event    @relation(fields: [eventId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  
+  rating    Int
+  feedback  String?
+  
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+}
