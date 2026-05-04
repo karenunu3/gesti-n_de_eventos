@@ -46,7 +46,7 @@ const AdminEvents = () => {
 
   // QR dinámico + contador de asistencias en tiempo real
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (showQrModal) {
       const fetchQr = async () => {
         try {

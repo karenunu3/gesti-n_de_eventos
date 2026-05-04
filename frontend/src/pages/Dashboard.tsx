@@ -3,7 +3,7 @@ import { fetchApi, API_URL } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import {
   Calendar, FileText, Download, Users, BarChart3,
-  GraduationCap, Shield, ShieldAlert, BookOpen, Layers, Clock, CheckCircle, XCircle
+  GraduationCap, Layers, Clock, CheckCircle, XCircle
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useTranslation } from 'react-i18next';

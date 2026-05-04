@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
 import { ArrowLeft, Mail, Send } from 'lucide-react';
 

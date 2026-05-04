@@ -1,5 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { Component, ReactNode } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Component, type ReactNode } from 'react';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -19,20 +19,20 @@ const getUser = () => {
   catch { return null; }
 };
 
-const PrivateRoute = ({ children }: { children: JSX.Element }) => {
+const PrivateRoute = ({ children }: { children: ReactNode }) => {
   const user = getUser();
   if (!user?.id) return <Navigate to="/login" replace />;
   return children;
 };
 
-const AdminRoute = ({ children }: { children: JSX.Element }) => {
+const AdminRoute = ({ children }: { children: ReactNode }) => {
   const user = getUser();
   if (!user?.id) return <Navigate to="/login" replace />;
   if (!['ADMIN', 'SECRETARIA', 'DOCENTE'].includes(user.role)) return <Navigate to="/dashboard" replace />;
   return children;
 };
 
-const SuperAdminRoute = ({ children }: { children: JSX.Element }) => {
+const SuperAdminRoute = ({ children }: { children: ReactNode }) => {
   const user = getUser();
   if (!user?.id) return <Navigate to="/login" replace />;
   if (user.role !== 'ADMIN') return <Navigate to="/dashboard" replace />;
