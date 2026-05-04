@@ -1,25 +1,68 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
-import { UserPlus, Mail, KeySquare, User, CreditCard, GraduationCap, BookOpen, Eye, EyeOff } from 'lucide-react';
+import { validateDocument, getPasswordStrength } from '../lib/validators';
+import type { PasswordStrength } from '../lib/validators';
+import { UserPlus, Mail, KeySquare, User, CreditCard, GraduationCap, BookOpen, Eye, EyeOff, Check, X } from 'lucide-react';
+
+const PasswordStrengthBar = ({ strength }: { strength: PasswordStrength }) => {
+  if (!strength.score && strength.label === '') return null;
+  return (
+    <div className="mt-2 space-y-1.5">
+      <div className="flex gap-1">
+        {[1, 2, 3, 4].map(i => (
+          <div
+            key={i}
+            className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+              i <= strength.score ? strength.barColor : 'bg-slate-700'
+            }`}
+          />
+        ))}
+      </div>
+      {strength.label && (
+        <p className={`text-xs font-medium ${strength.textColor}`}>{strength.label}</p>
+      )}
+      <ul className="grid grid-cols-2 gap-0.5 text-xs">
+        {[
+          { key: 'length',    label: 'Mín. 8 caracteres' },
+          { key: 'uppercase', label: 'Mayúscula' },
+          { key: 'lowercase', label: 'Minúscula' },
+          { key: 'number',    label: 'Número' },
+          { key: 'special',   label: 'Carácter especial' },
+        ].map(({ key, label }) => {
+          const ok = strength.checks[key as keyof typeof strength.checks];
+          return (
+            <li key={key} className={`flex items-center gap-1 ${ok ? 'text-green-400' : 'text-slate-500'}`}>
+              {ok ? <Check size={10} /> : <X size={10} />} {label}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+};
 
 const Register = () => {
   const navigate = useNavigate();
 
   const [careers, setCareers] = useState<any[]>([]);
+  const [docType, setDocType] = useState<'CI' | 'PASAPORTE'>('CI');
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
     email: '',
-    dni: '',
+    ci: '',
     role: 'ALUMNO',
     careerId: '',
     password: '',
     confirmPassword: '',
   });
+  const [docError, setDocError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const strength = getPasswordStrength(form.password);
 
   useEffect(() => {
     fetchApi('/careers')
@@ -30,16 +73,37 @@ const Register = () => {
   const set = (field: string, value: string) =>
     setForm(prev => ({ ...prev, [field]: value }));
 
+  const handleDocChange = (value: string) => {
+    const cleaned = docType === 'CI'
+      ? value.replace(/\D/g, '').slice(0, 10)
+      : value.replace(/[^A-Za-z0-9]/g, '').slice(0, 15).toUpperCase();
+    set('ci', cleaned);
+    if (cleaned.length > 0) {
+      setDocError(validateDocument(docType, cleaned) ?? '');
+    } else {
+      setDocError('');
+    }
+  };
+
+  const handleDocTypeChange = (type: 'CI' | 'PASAPORTE') => {
+    setDocType(type);
+    set('ci', '');
+    setDocError('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (form.password !== form.confirmPassword) {
-      setError('Las contraseñas no coinciden.');
+    const docErr = validateDocument(docType, form.ci);
+    if (docErr) { setError(docErr); return; }
+
+    if (strength.score < 3) {
+      setError('La contraseña debe ser al menos Fuerte (mayúscula, minúscula, número y símbolo).');
       return;
     }
-    if (form.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
+    if (form.password !== form.confirmPassword) {
+      setError('Las contraseñas no coinciden.');
       return;
     }
 
@@ -51,7 +115,7 @@ const Register = () => {
           firstName: form.firstName,
           lastName: form.lastName,
           email: form.email,
-          dni: form.dni,
+          dni: form.ci,
           password: form.password,
           role: form.role,
           careerId: form.careerId ? parseInt(form.careerId) : null,
@@ -76,12 +140,10 @@ const Register = () => {
       {/* Panel izquierdo — formulario */}
       <div className="w-full md:w-1/2 lg:w-2/5 flex items-center justify-center animated-gradient p-4 min-h-screen md:min-h-0">
         <div className="glass-dark w-full max-w-lg p-8 rounded-3xl fade-in relative overflow-hidden">
-          {/* Decoraciones */}
           <div className="absolute top-[-50px] right-[-50px] w-32 h-32 bg-istpet-gold rounded-full blur-3xl opacity-10" />
           <div className="absolute bottom-[-50px] left-[-50px] w-40 h-40 bg-blue-500 rounded-full blur-3xl opacity-10" />
 
           <div className="relative z-10">
-            {/* Encabezado */}
             <div className="text-center mb-8">
               <div className="flex justify-center mb-3">
                 <img
@@ -152,21 +214,37 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* DNI */}
+              {/* Tipo de documento */}
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Cédula / DNI</label>
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Documento de identidad</label>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {(['CI', 'PASAPORTE'] as const).map(type => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => handleDocTypeChange(type)}
+                      className={`py-2 rounded-xl font-medium text-sm transition-all border ${
+                        docType === type
+                          ? 'bg-istpet-gold/20 border-istpet-gold text-istpet-gold'
+                          : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-500'
+                      }`}
+                    >
+                      {type === 'CI' ? 'Cédula (CI)' : 'Pasaporte'}
+                    </button>
+                  ))}
+                </div>
                 <div className="relative">
                   <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                   <input
                     required
                     type="text"
-                    maxLength={10}
-                    className={inputClass}
-                    placeholder="0123456789"
-                    value={form.dni}
-                    onChange={e => set('dni', e.target.value.replace(/\D/g, ''))}
+                    className={`${inputClass} ${docError ? 'border-red-500/70 focus:ring-red-500' : ''}`}
+                    placeholder={docType === 'CI' ? '0123456789' : 'AB123456'}
+                    value={form.ci}
+                    onChange={e => handleDocChange(e.target.value)}
                   />
                 </div>
+                {docError && <p className="text-red-400 text-xs mt-1">{docError}</p>}
               </div>
 
               {/* Rol */}
@@ -175,7 +253,7 @@ const Register = () => {
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { value: 'ALUMNO', label: 'Estudiante', icon: <GraduationCap size={16} /> },
-                    { value: 'DOCENTE', label: 'Docente', icon: <BookOpen size={16} /> },
+                    { value: 'DOCENTE', label: 'Docente',   icon: <BookOpen size={16} /> },
                   ].map(opt => (
                     <button
                       key={opt.value}
@@ -222,7 +300,7 @@ const Register = () => {
                     required
                     type={showPassword ? 'text' : 'password'}
                     className={`${inputClass} pr-10`}
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="Crea una contraseña segura"
                     value={form.password}
                     onChange={e => set('password', e.target.value)}
                   />
@@ -234,6 +312,7 @@ const Register = () => {
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                {form.password && <PasswordStrengthBar strength={strength} />}
               </div>
 
               {/* Confirmar contraseña */}
@@ -271,7 +350,6 @@ const Register = () => {
                 )}
               </button>
 
-              {/* Link a login */}
               <p className="text-center text-sm text-slate-400 pt-1">
                 ¿Ya tienes cuenta?{' '}
                 <Link to="/login" className="text-istpet-gold hover:underline font-medium">

@@ -45,12 +45,21 @@ class ErrorBoundary extends Component<
   { hasError: boolean; message: string }
 > {
   state = { hasError: false, message: '' };
+  private _domRetries = 0;
 
   static getDerivedStateFromError(err: Error) {
     return { hasError: true, message: err.message };
   }
 
   componentDidCatch(err: Error, info: any) {
+    // removeChild errors are transient artifacts of React 18 concurrent mode
+    // during SPA navigation with Leaflet/QR scanner in the module graph.
+    // Auto-recover up to 3 times so the user never sees the error screen.
+    if (err.message.includes('removeChild') && this._domRetries < 3) {
+      this._domRetries++;
+      this.setState({ hasError: false, message: '' });
+      return;
+    }
     console.error('[ErrorBoundary]', err, info);
   }
 

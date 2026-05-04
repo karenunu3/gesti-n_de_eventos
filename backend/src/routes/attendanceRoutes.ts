@@ -8,8 +8,8 @@ const router = Router();
 // /api/attendance/:eventId
 router.post('/:eventId', protect, restrictTo('ALUMNO', 'DOCENTE'), upload.single('photo'), markAttendance);
 
-// Rutas de administración
-router.get('/event/:eventId', protect, restrictTo('ADMIN', 'SECRETARIA'), getEventAttendance);
-router.put('/:id/validate', protect, restrictTo('ADMIN', 'SECRETARIA'), validateAttendance);
+// Rutas de administración — DOCENTE también puede ver y validar
+router.get('/event/:eventId', protect, restrictTo('ADMIN', 'SECRETARIA', 'DOCENTE'), getEventAttendance);
+router.put('/:id/validate', protect, restrictTo('ADMIN', 'SECRETARIA', 'DOCENTE'), validateAttendance);
 
 export default router;

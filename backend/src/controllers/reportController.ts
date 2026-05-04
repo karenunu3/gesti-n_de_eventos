@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../prismaClient';
-import PDFDocument from 'pdfkit';
-import QRCode from 'qrcode';
 import fs from 'fs';
 import path from 'path';
+import { generateProfessionalCertificate } from '../utils/certificateGenerator';
 
 export const getStudentReport = async (req: any, res: Response): Promise<void> => {
   try {
@@ -31,7 +30,14 @@ export const generateCertificate = async (req: any, res: Response): Promise<void
     // Verificar si el usuario asistió al evento
     const attendance = await prisma.eventAttendance.findUnique({
       where: { eventId_userId: { eventId, userId } },
-      include: { event: true, user: true }
+      include: {
+        event: true,
+        user: {
+          include: {
+            career: { select: { name: true } }
+          }
+        }
+      }
     });
 
     if (!attendance || !attendance.isValid) {
@@ -39,7 +45,7 @@ export const generateCertificate = async (req: any, res: Response): Promise<void
       return;
     }
 
-    // Verificar Check-Out (Nuevo requerimiento Fase 5)
+    // Verificar Check-Out
     if (!attendance.checkOutAt || !attendance.isCheckOutValid) {
       res.status(400).json({ message: 'Aún no has registrado tu salida o es inválida.' });
       return;
@@ -55,7 +61,7 @@ export const generateCertificate = async (req: any, res: Response): Promise<void
       return;
     }
 
-    // Verificar si ya existe el certificado
+    // Verificar o crear certificado
     let certificate = await prisma.certificate.findUnique({
       where: { eventId_userId: { eventId, userId } }
     });
@@ -70,41 +76,46 @@ export const generateCertificate = async (req: any, res: Response): Promise<void
       });
     }
 
-    // Generar PDF y QR
-    const doc = new PDFDocument({ layout: 'landscape', size: 'A4' });
+    // Crear directorio si no existe
+    const uploadsDir = path.join(__dirname, '../../uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    // Generar PDF profesional
     const pdfPath = `/uploads/certificate_${certificate.certificateCode}.pdf`;
     const fullPath = path.join(__dirname, `../../${pdfPath}`);
-    
     const stream = fs.createWriteStream(fullPath);
-    doc.pipe(stream);
 
-    // Diseño básico del certificado
-    doc.fontSize(30).text('CERTIFICADO DE ASISTENCIA', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(20).text('Instituto Superior Tecnológico "Mayor Pedro Traversari"', { align: 'center' });
-    doc.moveDown(2);
-    doc.fontSize(16).text('Otorga el presente certificado a:', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(24).text(`${attendance.user.firstName} ${attendance.user.lastName}`, { align: 'center', underline: true });
-    doc.moveDown();
-    doc.fontSize(16).text(`Por haber participado en el evento "${attendance.event.title}"`, { align: 'center' });
-    doc.text(`con una duración de ${attendance.event.hours} horas.`, { align: 'center' });
+    await generateProfessionalCertificate(stream, {
+      studentName: `${attendance.user.firstName} ${attendance.user.lastName}`,
+      careerName: attendance.user.career?.name || 'No especificada',
+      eventTitle: attendance.event.title,
+      eventDate: attendance.event.startDate,
+      hours: attendance.event.hours,
+      certificateCode: certificate.certificateCode,
+      frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173'
+    });
 
-    // Generar código QR para verificación estática
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify/${certificate.certificateCode}`;
-    const qrImage = await QRCode.toDataURL(verificationUrl);
-    
-    doc.image(qrImage, 50, 450, { fit: [100, 100] });
-    doc.fontSize(10).text(`Código de verificación: ${certificate.certificateCode}`, 50, 560);
-    
-    doc.end();
-
+    // Actualizar base de datos cuando se complete la escritura
     stream.on('finish', async () => {
-      await prisma.certificate.update({
-        where: { id: certificate!.id },
-        data: { pdfUrl: pdfPath }
-      });
-      res.status(200).json({ message: 'Certificado generado con éxito', certificateCode: certificate!.certificateCode, pdfUrl: pdfPath });
+      try {
+        await prisma.certificate.update({
+          where: { id: certificate!.id },
+          data: { pdfUrl: pdfPath }
+        });
+        res.status(200).json({
+          message: 'Certificado generado con éxito',
+          certificateCode: certificate!.certificateCode,
+          pdfUrl: pdfPath
+        });
+      } catch (updateError: any) {
+        res.status(500).json({ message: 'Error al guardar certificado', error: updateError.message });
+      }
+    });
+
+    stream.on('error', (err: any) => {
+      res.status(500).json({ message: 'Error al escribir certificado', error: err.message });
     });
 
   } catch (error: any) {
@@ -182,6 +193,23 @@ export const exportExcel = async (req: Request, res: Response): Promise<void> =>
     res.end();
   } catch (error: any) {
     res.status(500).json({ message: 'Error al exportar Excel', error: error.message });
+  }
+};
+
+export const getSurveyResults = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const eventId = parseInt(req.params.eventId as string);
+    const surveys = await prisma.survey.findMany({
+      where: { eventId },
+      include: { user: { select: { firstName: true, lastName: true } } },
+      orderBy: { createdAt: 'desc' }
+    });
+    const avgRating = surveys.length > 0
+      ? Math.round((surveys.reduce((sum, s) => sum + s.rating, 0) / surveys.length) * 10) / 10
+      : 0;
+    res.status(200).json({ surveys, avgRating, total: surveys.length });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error al obtener encuestas', error: error.message });
   }
 };
 

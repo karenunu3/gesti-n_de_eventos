@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { fetchApi, API_URL } from '../lib/api';
-import { Calendar, MapPin, Clock, CheckCircle, XCircle, Star, QrCode, ArrowLeft, Search, Filter, Layers, GraduationCap } from 'lucide-react';
+import { Calendar, MapPin, Clock, CheckCircle, XCircle, Star, QrCode, ArrowLeft, Search, Filter, Layers, GraduationCap, X } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -189,6 +189,8 @@ const Events = () => {
     }
   };
 
+  const isPast = (event: any) => new Date(event.endDate) < new Date();
+
   // Filtered events
   const filteredEvents = events.filter(event => {
     const now = new Date();
@@ -317,25 +319,71 @@ const Events = () => {
           </div>
         </div>
 
-        {/* Attendance Modal */}
+        {/* Attendance Modal — escáner QR pantalla completa */}
         {attendanceEventId && (
-          <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-3xl p-4 sm:p-6 w-full max-w-sm shadow-2xl flex flex-col max-h-[95vh] border border-slate-100 dark:border-slate-700">
-              <h2 className="text-lg sm:text-xl font-bold mb-2 flex items-center gap-2 shrink-0 dark:text-slate-50">
-                <QrCode size={20} className="text-istpet-blue dark:text-istpet-gold" />
-                {t('events.scan_qr')}
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-4 shrink-0">Apunta la cámara al código QR proyectado.</p>
-              <div className="flex-1 min-h-[200px] max-h-[300px] w-full bg-black rounded-2xl mb-4 overflow-hidden relative border-2 border-slate-200 dark:border-slate-700">
-                <div id="qr-reader" className="absolute inset-0 w-full h-full flex flex-col justify-center [&>video]:object-cover [&>video]:w-full [&>video]:h-full [&>img]:hidden" />
+          <div className="fixed inset-0 z-50 bg-black flex flex-col">
+            <div className="flex-1 min-h-0 relative overflow-hidden">
+
+              {/* Feed de cámara */}
+              <div
+                id="qr-reader"
+                className="absolute inset-0 [&_video]:!object-cover [&_video]:!w-full [&_video]:!h-full [&_img]:!hidden [&_#qr-reader__dashboard]:!hidden [&_button]:!hidden [&_select]:!hidden"
+              />
+
+              {/* Overlay oscuro — 4 paneles alrededor de la ventana de escaneo */}
+              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+                {/* Sombra top */}
+                <div className="absolute inset-x-0 top-0 h-[calc(50%-112px)] bg-black/65" />
+                {/* Sombra bottom */}
+                <div className="absolute inset-x-0 bottom-0 h-[calc(50%-112px)] bg-black/65" />
+                {/* Sombra left */}
+                <div className="absolute left-0 top-[calc(50%-112px)] bottom-[calc(50%-112px)] w-[calc(50%-112px)] bg-black/65" />
+                {/* Sombra right */}
+                <div className="absolute right-0 top-[calc(50%-112px)] bottom-[calc(50%-112px)] w-[calc(50%-112px)] bg-black/65" />
+
+                {/* Ventana de escaneo con esquinas */}
+                <div className="relative w-56 h-56">
+                  {/* Esquina sup-izq */}
+                  <span className="absolute top-0 left-0 w-7 h-7 border-t-[3px] border-l-[3px] border-white rounded-tl-md" />
+                  {/* Esquina sup-der */}
+                  <span className="absolute top-0 right-0 w-7 h-7 border-t-[3px] border-r-[3px] border-white rounded-tr-md" />
+                  {/* Esquina inf-izq */}
+                  <span className="absolute bottom-0 left-0 w-7 h-7 border-b-[3px] border-l-[3px] border-white rounded-bl-md" />
+                  {/* Esquina inf-der */}
+                  <span className="absolute bottom-0 right-0 w-7 h-7 border-b-[3px] border-r-[3px] border-white rounded-br-md" />
+                  {/* Línea de escaneo animada */}
+                  <span className="absolute left-2 right-2 h-[2px] rounded-full bg-istpet-gold/90 animate-[scanline_2s_ease-in-out_infinite]" style={{ top: '50%' }} />
+                </div>
+
+                {/* Texto de instrucción debajo del marco */}
+                <p className="absolute text-white/75 text-sm font-medium tracking-wide" style={{ top: 'calc(50% + 124px)' }}>
+                  Apunta al código QR proyectado
+                </p>
               </div>
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-4 bg-slate-100 dark:bg-slate-700 p-2.5 rounded-xl shrink-0">
-                <MapPin size={16} className={location ? "text-istpet-blue dark:text-istpet-gold" : "text-amber-500"} />
-                {location ? 'Ubicación GPS obtenida' : 'Buscando GPS...'}
+
+              {/* Barra superior */}
+              <div className="absolute top-0 left-0 right-0 flex items-center gap-3 px-4 pt-10 pb-6 bg-gradient-to-b from-black/75 to-transparent">
+                <button
+                  onClick={cancelAttendance}
+                  className="p-2 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-white hover:bg-white/25 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+                <div className="flex items-center gap-2">
+                  <QrCode size={18} className="text-istpet-gold" />
+                  <h2 className="text-white font-bold text-base">{t('events.scan_qr')}</h2>
+                </div>
               </div>
-              <button onClick={cancelAttendance} className="w-full py-2.5 sm:py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-50 rounded-xl font-bold transition-colors shrink-0">
-                {t('events.cancel')}
-              </button>
+
+              {/* GPS badge — parte inferior */}
+              <div className="absolute bottom-6 left-0 right-0 flex justify-center">
+                <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-full px-4 py-2 border border-white/15">
+                  <MapPin size={14} className={location ? 'text-green-400' : 'text-amber-400'} />
+                  <span className="text-white text-xs font-medium">
+                    {location ? 'Ubicación GPS obtenida' : 'Buscando GPS...'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -396,9 +444,18 @@ const Events = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map((event) => (
               <div key={event.id} className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-xl dark:hover:shadow-slate-900/50 transition-all group flex flex-col">
-                <div className="h-32 bg-gradient-to-r from-istpet-blue to-istpet-blue-light dark:from-slate-700 dark:to-slate-800 p-6 flex flex-col justify-end border-b-2 border-istpet-gold/50 relative">
-                  {/* Badge tipo */}
-                  <div className="absolute top-4 right-4">
+                <div className={`h-32 p-6 flex flex-col justify-end border-b-2 relative ${
+                  isPast(event)
+                    ? 'bg-gradient-to-r from-slate-500 to-slate-600 dark:from-slate-700 dark:to-slate-800 border-slate-400/50'
+                    : 'bg-gradient-to-r from-istpet-blue to-istpet-blue-light dark:from-slate-700 dark:to-slate-800 border-istpet-gold/50'
+                }`}>
+                  {/* Badges top-right */}
+                  <div className="absolute top-4 right-4 flex flex-col items-end gap-1">
+                    {isPast(event) && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-black/30 text-white/80 font-semibold flex items-center gap-1">
+                        <XCircle size={10} /> Finalizado
+                      </span>
+                    )}
                     {event.isTransversal ? (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-istpet-gold/80 text-istpet-blue font-semibold flex items-center gap-1">
                         <Layers size={10} /> Transversal
@@ -474,9 +531,13 @@ const Events = () => {
                             }
                           })()}
                         </>
+                      ) : isPast(event) ? (
+                        <div className="w-full py-3 px-4 rounded-xl font-semibold flex justify-center items-center gap-2 bg-slate-100 dark:bg-slate-700/60 text-slate-400 dark:text-slate-500 text-sm border border-slate-200 dark:border-slate-600 cursor-not-allowed select-none">
+                          <XCircle size={16} /> Inscripciones cerradas
+                        </div>
                       ) : (
                         <button onClick={() => handleRegister(event.id)}
-                          className="w-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-50 py-3 rounded-xl font-bold transition-colors text-sm">
+                          className="w-full bg-slate-100 dark:bg-slate-700 hover:bg-istpet-blue hover:text-white dark:hover:bg-istpet-gold dark:hover:text-slate-900 text-slate-800 dark:text-slate-50 py-3 rounded-xl font-bold transition-all text-sm">
                           {t('events.enroll')}
                         </button>
                       )}

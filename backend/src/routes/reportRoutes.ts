@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getStudentReport, generateCertificate, verifyCertificate, exportExcel, submitSurvey } from '../controllers/reportController';
+import { getStudentReport, generateCertificate, verifyCertificate, exportExcel, submitSurvey, getSurveyResults } from '../controllers/reportController';
 import { protect, restrictTo } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -14,8 +14,11 @@ router.get('/student/:userId', protect, getStudentReport);
 router.post('/certificate/:eventId', protect, generateCertificate);
 router.post('/certificate/:eventId/:userId', protect, generateCertificate);
 
-// Exportar a Excel (Admin/Secretaría)
-router.get('/excel/:eventId', protect, restrictTo('ADMIN', 'SECRETARIA'), exportExcel);
+// Exportar a Excel (Admin/Secretaría/Docente)
+router.get('/excel/:eventId', protect, restrictTo('ADMIN', 'SECRETARIA', 'DOCENTE'), exportExcel);
+
+// Resultados de encuestas por evento (Admin/Secretaría/Docente)
+router.get('/surveys/:eventId', protect, restrictTo('ADMIN', 'SECRETARIA', 'DOCENTE'), getSurveyResults);
 
 // Verificación pública (no necesita token)
 router.get('/verify/:code', verifyCertificate);

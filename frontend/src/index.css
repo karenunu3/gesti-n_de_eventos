@@ -8,22 +8,39 @@
   --color-istpet-gold: #BCA75B;
   --color-istpet-gold-light: #d6bf69;
   --color-istpet-gold-dark: #a3914e;
+
+  /* Typography — Poppins body, Raleway headings (same fonts as institutotraversari.edu.ec) */
+  --font-sans: 'Poppins', system-ui, -apple-system, sans-serif;
 }
 
 @layer base {
   body {
     @apply bg-slate-50 text-slate-900 antialiased transition-colors duration-300 dark:bg-slate-900 dark:text-slate-50;
+    font-family: 'Poppins', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
   }
-  
-  /* Dark mode support if we add class 'dark' to html, but we'll stick to a sleek default mode for now */
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Raleway', system-ui, sans-serif;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  /* Inputs inherit Poppins */
+  input, select, textarea, button {
+    font-family: inherit;
+  }
+
   .glass {
     @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl;
   }
-  
+
   .glass-dark {
     @apply bg-slate-900/70 backdrop-blur-md border border-slate-700/50 shadow-2xl text-white;
   }
-  
+
   .animated-gradient {
     background: linear-gradient(-45deg, #1F295B, #2c3a80, #BCA75B, #d6bf69);
     background-size: 400% 400%;
@@ -31,29 +48,51 @@
   }
 
   @keyframes gradient {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
 
   .fade-in {
-    animation: fadeIn 0.5s ease-out forwards;
+    animation: fadeIn 0.4s ease-out forwards;
   }
 
   @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
+
+  /* QR scanner line animation */
+  @keyframes scanline {
+    0%   { top: 10%; opacity: 0.6; }
+    50%  { top: 90%; opacity: 1; }
+    100% { top: 10%; opacity: 0.6; }
+  }
+
+  /* Hide html5-qrcode built-in UI chrome */
+  #qr-reader__dashboard,
+  #qr-reader__status_span,
+  #qr-reader__camera_selection,
+  #qr-reader__header_message {
+    display: none !important;
+  }
+  #qr-reader__scan_region {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    border: none !important;
+  }
+  #qr-reader__scan_region video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+  #qr-reader__scan_region img { display: none !important; }
+
+  /* Scrollbar subtle styling */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #BCA75B40; border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #BCA75B80; }
 }

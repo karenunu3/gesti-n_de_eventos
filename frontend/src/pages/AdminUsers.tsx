@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { fetchApi } from '../lib/api';
+import { validateDocument, getPasswordStrength } from '../lib/validators';
+import type { PasswordStrength } from '../lib/validators';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, Shield, ShieldAlert, BookOpen, GraduationCap, ArrowLeft,
-  Lock, UserPlus, X, Eye, EyeOff, Trash2
+  Lock, UserPlus, X, Eye, EyeOff, Trash2, Check, CreditCard
 } from 'lucide-react';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -14,8 +16,45 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const emptyForm = {
-  firstName: '', lastName: '', email: '', dni: '',
+  firstName: '', lastName: '', email: '', ci: '', docType: 'CI' as 'CI' | 'PASAPORTE',
   role: 'ALUMNO', careerId: '', password: '', confirmPassword: '',
+};
+
+const PasswordStrengthBar = ({ strength }: { strength: PasswordStrength }) => {
+  if (!strength.score && strength.label === '') return null;
+  return (
+    <div className="mt-1.5 space-y-1">
+      <div className="flex gap-1">
+        {[1, 2, 3, 4].map(i => (
+          <div
+            key={i}
+            className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+              i <= strength.score ? strength.barColor : 'bg-slate-200 dark:bg-slate-600'
+            }`}
+          />
+        ))}
+      </div>
+      {strength.label && (
+        <p className={`text-xs font-medium ${strength.textColor}`}>{strength.label}</p>
+      )}
+      <ul className="grid grid-cols-2 gap-0.5 text-xs">
+        {[
+          { key: 'length',    label: 'Mín. 8 caracteres' },
+          { key: 'uppercase', label: 'Mayúscula' },
+          { key: 'lowercase', label: 'Minúscula' },
+          { key: 'number',    label: 'Número' },
+          { key: 'special',   label: 'Carácter especial' },
+        ].map(({ key, label }) => {
+          const ok = strength.checks[key as keyof typeof strength.checks];
+          return (
+            <li key={key} className={`flex items-center gap-1 ${ok ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
+              {ok ? <Check size={10} /> : <X size={10} />} {label}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
 };
 
 const AdminUsers = () => {
@@ -24,11 +63,14 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm]       = useState({ ...emptyForm });
+  const [docError, setDocError] = useState('');
   const [formError, setFormError]   = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [roleFilter, setRoleFilter] = useState('ALL');
   const navigate = useNavigate();
+
+  const strength = getPasswordStrength(form.password);
 
   useEffect(() => {
     loadUsers();
@@ -49,21 +91,45 @@ const AdminUsers = () => {
   const set = (field: string, value: string) =>
     setForm(prev => ({ ...prev, [field]: value }));
 
+  const handleDocChange = (value: string) => {
+    const cleaned = form.docType === 'CI'
+      ? value.replace(/\D/g, '').slice(0, 10)
+      : value.replace(/[^A-Za-z0-9]/g, '').slice(0, 15).toUpperCase();
+    set('ci', cleaned);
+    if (cleaned.length > 0) {
+      setDocError(validateDocument(form.docType, cleaned) ?? '');
+    } else {
+      setDocError('');
+    }
+  };
+
+  const handleDocTypeChange = (type: 'CI' | 'PASAPORTE') => {
+    setForm(prev => ({ ...prev, docType: type, ci: '' }));
+    setDocError('');
+  };
+
   const openModal = () => {
     setForm({ ...emptyForm });
     setFormError('');
+    setDocError('');
     setShowModal(true);
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
+
+    const docErr = validateDocument(form.docType, form.ci);
+    if (docErr) { setFormError(docErr); return; }
+
+    if (strength.score < 3) {
+      setFormError('La contraseña debe ser al menos Fuerte (mayúscula, minúscula, número y símbolo).');
+      return;
+    }
     if (form.password !== form.confirmPassword) {
       setFormError('Las contraseñas no coinciden.'); return;
     }
-    if (form.password.length < 6) {
-      setFormError('La contraseña debe tener al menos 6 caracteres.'); return;
-    }
+
     setFormLoading(true);
     try {
       await fetchApi('/users', {
@@ -72,7 +138,7 @@ const AdminUsers = () => {
           firstName: form.firstName,
           lastName: form.lastName,
           email: form.email,
-          dni: form.dni,
+          dni: form.ci,
           password: form.password,
           role: form.role,
           careerId: form.careerId || null,
@@ -202,7 +268,7 @@ const AdminUsers = () => {
           <table className="w-full">
             <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
               <tr>
-                {['Nombre', 'Email', 'DNI', 'Carrera', 'Rol', 'Cambiar Rol', ''].map(h => (
+                {['Nombre', 'Email', 'CI / Pasaporte', 'Carrera', 'Rol', 'Cambiar Rol', ''].map(h => (
                   <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -327,9 +393,37 @@ const AdminUsers = () => {
                 <input required type="email" className={inputClass} placeholder="usuario@istpet.edu.ec" value={form.email} onChange={e => set('email', e.target.value)} />
               </div>
 
+              {/* Documento */}
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Cédula / DNI *</label>
-                <input required type="text" maxLength={10} className={inputClass} placeholder="0123456789" value={form.dni} onChange={e => set('dni', e.target.value.replace(/\D/g, ''))} />
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Documento de identidad *</label>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {(['CI', 'PASAPORTE'] as const).map(type => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => handleDocTypeChange(type)}
+                      className={`py-2 rounded-xl font-medium text-sm transition-all border ${
+                        form.docType === type
+                          ? 'bg-istpet-blue/10 dark:bg-istpet-gold/10 border-istpet-blue dark:border-istpet-gold text-istpet-blue dark:text-istpet-gold'
+                          : 'bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-500'
+                      }`}
+                    >
+                      {type === 'CI' ? 'Cédula (CI)' : 'Pasaporte'}
+                    </button>
+                  ))}
+                </div>
+                <div className="relative">
+                  <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    required
+                    type="text"
+                    className={`${inputClass} pl-9 ${docError ? 'border-red-400 dark:border-red-500 focus:ring-red-400' : ''}`}
+                    placeholder={form.docType === 'CI' ? '0123456789' : 'AB123456'}
+                    value={form.ci}
+                    onChange={e => handleDocChange(e.target.value)}
+                  />
+                </div>
+                {docError && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{docError}</p>}
               </div>
 
               <div>
@@ -359,7 +453,7 @@ const AdminUsers = () => {
                     required
                     type={showPassword ? 'text' : 'password'}
                     className={`${inputClass} pr-10`}
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="Crea una contraseña segura"
                     value={form.password}
                     onChange={e => set('password', e.target.value)}
                   />
@@ -367,6 +461,7 @@ const AdminUsers = () => {
                     {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
+                {form.password && <PasswordStrengthBar strength={strength} />}
               </div>
 
               <div>

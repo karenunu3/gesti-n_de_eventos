@@ -14,7 +14,7 @@ const Footer = () => {
             </div>
           </div>
           <p className="text-sm opacity-80 max-w-xs">
-            Excelencia Académica. Formando profesionales líderes en el Ecuador.
+            Formamos profesionales competitivos, creativos, íntegros y con valores, con elevado nivel académico.
           </p>
         </div>
 
