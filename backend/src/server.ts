@@ -43,6 +43,10 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/careers', careerRoutes);
 app.use('/api/users', userRoutes);
 
-app.listen(port, () => {
-  console.log(`Backend de ISTPET corriendo en http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`Backend de ISTPET corriendo en http://localhost:${port}`);
+  });
+}
+
+export default app;
