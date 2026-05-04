@@ -99,7 +99,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       data: { resetToken, resetTokenExpiry }
     });
 
-    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
     const message = `
       <h1>Recuperación de Contraseña</h1>
       <p>Hola ${user.firstName},</p>
