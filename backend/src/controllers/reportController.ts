@@ -3,6 +3,7 @@ import prisma from '../prismaClient';
 import fs from 'fs';
 import path from 'path';
 import { generateProfessionalCertificate } from '../utils/certificateGenerator';
+import { put } from '@vercel/blob';
 
 export const getStudentReport = async (req: any, res: Response): Promise<void> => {
   try {
@@ -76,18 +77,8 @@ export const generateCertificate = async (req: any, res: Response): Promise<void
       });
     }
 
-    // Crear directorio si no existe
-    const uploadsDir = path.join(__dirname, '../../uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
-    // Generar PDF profesional
-    const pdfPath = `/uploads/certificate_${certificate.certificateCode}.pdf`;
-    const fullPath = path.join(__dirname, `../../${pdfPath}`);
-    const stream = fs.createWriteStream(fullPath);
-
-    await generateProfessionalCertificate(stream, {
+    // Generar PDF profesional en Buffer
+    const pdfBuffer = await generateProfessionalCertificate({
       studentName: `${attendance.user.firstName} ${attendance.user.lastName}`,
       careerName: attendance.user.career?.name || 'No especificada',
       eventTitle: attendance.event.title,
@@ -97,25 +88,42 @@ export const generateCertificate = async (req: any, res: Response): Promise<void
       frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173'
     });
 
-    // Actualizar base de datos cuando se complete la escritura
-    stream.on('finish', async () => {
-      try {
-        await prisma.certificate.update({
-          where: { id: certificate!.id },
-          data: { pdfUrl: pdfPath }
-        });
-        res.status(200).json({
-          message: 'Certificado generado con éxito',
-          certificateCode: certificate!.certificateCode,
-          pdfUrl: pdfPath
-        });
-      } catch (updateError: any) {
-        res.status(500).json({ message: 'Error al guardar certificado', error: updateError.message });
+    // Subir a Vercel Blob
+    const fileName = `certificate_${certificate.certificateCode}.pdf`;
+    let pdfUrl = '';
+
+    try {
+      if (process.env.BLOB_READ_WRITE_TOKEN) {
+         const blobResult = await put(`certificados/${fileName}`, pdfBuffer, {
+           access: 'public',
+           contentType: 'application/pdf',
+           addRandomSuffix: false // Para mantener el nombre exacto
+         });
+         pdfUrl = blobResult.url;
+      } else {
+         // Fallback local temporal si no hay Blob Token configurado en desarrollo
+         const uploadsDir = path.join(__dirname, '../../uploads');
+         if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+         const localPath = path.join(uploadsDir, fileName);
+         fs.writeFileSync(localPath, pdfBuffer);
+         pdfUrl = `/uploads/${fileName}`;
       }
+    } catch (blobError: any) {
+      console.error('Error subiendo a Vercel Blob:', blobError);
+      res.status(500).json({ message: 'Error al subir certificado a Vercel Blob', error: blobError.message });
+      return;
+    }
+
+    // Actualizar base de datos
+    await prisma.certificate.update({
+      where: { id: certificate.id },
+      data: { pdfUrl }
     });
 
-    stream.on('error', (err: any) => {
-      res.status(500).json({ message: 'Error al escribir certificado', error: err.message });
+    res.status(200).json({
+      message: 'Certificado generado con éxito',
+      certificateCode: certificate.certificateCode,
+      pdfUrl
     });
 
   } catch (error: any) {
