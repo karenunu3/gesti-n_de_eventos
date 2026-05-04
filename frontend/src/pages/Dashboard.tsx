@@ -245,10 +245,10 @@ const Dashboard = () => {
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                     <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0/0.1)' }} />
+                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0/0.1)' }} isAnimationActive={false} />
                     <Legend iconType="circle" wrapperStyle={{ paddingTop: '12px', fontSize: '12px' }} />
-                    <Bar dataKey="Inscritos" fill="#BCA75B" radius={[4, 4, 0, 0]} barSize={26} />
-                    <Bar dataKey="Asistencias" fill="#1F295B" radius={[4, 4, 0, 0]} barSize={26} />
+                    <Bar dataKey="Inscritos" fill="#BCA75B" radius={[4, 4, 0, 0]} barSize={26} isAnimationActive={false} />
+                    <Bar dataKey="Asistencias" fill="#1F295B" radius={[4, 4, 0, 0]} barSize={26} isAnimationActive={false} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -334,15 +334,17 @@ const Dashboard = () => {
               btnClass="bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light"
               onClick={() => navigate('/admin/events')}
             />
-            <QuickCard
-              icon={<Layers size={20} className="text-istpet-gold" />}
-              iconBg="bg-istpet-gold/10"
-              title={t('dashboard.admin_careers')}
-              desc="Administra las carreras del instituto. Asócialas con eventos específicos."
-              btnLabel="Ir a Carreras"
-              btnClass="bg-istpet-gold text-istpet-blue hover:bg-istpet-gold-dark"
-              onClick={() => navigate('/admin/careers')}
-            />
+            {['ADMIN', 'SECRETARIA'].includes(user.role) && (
+              <QuickCard
+                icon={<Layers size={20} className="text-istpet-gold" />}
+                iconBg="bg-istpet-gold/10"
+                title={t('dashboard.admin_careers')}
+                desc="Administra las carreras del instituto. Asócialas con eventos específicos."
+                btnLabel="Ir a Carreras"
+                btnClass="bg-istpet-gold text-istpet-blue hover:bg-istpet-gold-dark"
+                onClick={() => navigate('/admin/careers')}
+              />
+            )}
             {user.role === 'ADMIN' && (
               <QuickCard
                 icon={<Users size={20} className="text-istpet-blue dark:text-istpet-gold" />}

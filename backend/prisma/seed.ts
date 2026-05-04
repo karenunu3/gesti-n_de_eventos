@@ -33,7 +33,11 @@ async function main() {
   await prisma.user.deleteMany();
 
   console.log('📚 Creando carreras...');
-  const careersData = ['Desarrollo de Software', 'Contabilidad', 'Administración de Empresas', 'Electrónica', 'Redes y Telecomunicaciones'];
+  const careersData = [
+    'Desarrollo de Software', 'Diseño Gráfico', 'Entrenamiento Deportivo', 'Educación Inicial', 'Mecánica Automotriz',
+    'Educación Básica', 'Electrónica', 'Gastronomía', 'Redes y Telecomunicaciones',
+    'Contabilidad y Asesoría Tributaria', 'Educación Inclusiva', 'Marketing y Comercio Electrónico', 'Talento Humano'
+  ];
   const careers = await Promise.all(
     careersData.map(name => prisma.career.upsert({
       where: { name }, update: {}, create: { name }

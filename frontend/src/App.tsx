@@ -32,6 +32,13 @@ const AdminRoute = ({ children }: { children: ReactNode }) => {
   return children;
 };
 
+const StaffRoute = ({ children }: { children: ReactNode }) => {
+  const user = getUser();
+  if (!user?.id) return <Navigate to="/login" replace />;
+  if (!['ADMIN', 'SECRETARIA'].includes(user.role)) return <Navigate to="/dashboard" replace />;
+  return children;
+};
+
 const SuperAdminRoute = ({ children }: { children: ReactNode }) => {
   const user = getUser();
   if (!user?.id) return <Navigate to="/login" replace />;
@@ -108,7 +115,7 @@ function App() {
 
               {/* Admin / Staff */}
               <Route path="/admin/events" element={<AdminRoute><AdminEvents /></AdminRoute>} />
-              <Route path="/admin/careers" element={<AdminRoute><AdminCareers /></AdminRoute>} />
+              <Route path="/admin/careers" element={<StaffRoute><AdminCareers /></StaffRoute>} />
               <Route path="/admin/users" element={<SuperAdminRoute><AdminUsers /></SuperAdminRoute>} />
 
               {/* Fallback */}

@@ -68,6 +68,7 @@ const AdminUsers = () => {
   const [formLoading, setFormLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [roleFilter, setRoleFilter] = useState('ALL');
+  const [careerFilter, setCareerFilter] = useState('ALL');
   const navigate = useNavigate();
 
   const strength = getPasswordStrength(form.password);
@@ -200,7 +201,11 @@ const AdminUsers = () => {
     { id: 'ADMIN', label: 'Administradores' },
   ];
 
-  const filteredUsers = roleFilter === 'ALL' ? users : users.filter(u => u.role === roleFilter);
+  const filteredUsers = users.filter(u => {
+    if (roleFilter !== 'ALL' && u.role !== roleFilter) return false;
+    if (careerFilter !== 'ALL' && u.career?.name !== careerFilter) return false;
+    return true;
+  });
 
   const inputClass = 'w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold transition-colors';
 
@@ -240,26 +245,41 @@ const AdminUsers = () => {
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex overflow-x-auto gap-2 mb-6 pb-1">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setRoleFilter(tab.id)}
-            className={`px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all text-sm ${
-              roleFilter === tab.id
-                ? 'bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 shadow-md'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
-            }`}
+      {/* Tabs y Filtros */}
+      <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+        <div className="flex overflow-x-auto gap-2 pb-1 flex-1">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => { setRoleFilter(tab.id); if(!['ALL', 'ALUMNO', 'DOCENTE'].includes(tab.id)) setCareerFilter('ALL'); }}
+              className={`px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all text-sm ${
+                roleFilter === tab.id
+                  ? 'bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 shadow-md'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
+            >
+              {tab.label}
+              <span className={`ml-1.5 text-xs py-0.5 px-1.5 rounded-full ${
+                roleFilter === tab.id ? 'bg-white/20 text-white dark:text-slate-900 dark:bg-slate-900/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+              }`}>
+                {tab.id === 'ALL' ? users.length : users.filter(u => u.role === tab.id).length}
+              </span>
+            </button>
+          ))}
+        </div>
+        
+        {['ALL', 'ALUMNO', 'DOCENTE'].includes(roleFilter) && (
+          <select 
+            value={careerFilter}
+            onChange={(e) => setCareerFilter(e.target.value)}
+            className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold text-sm max-w-full md:max-w-xs transition-colors"
           >
-            {tab.label}
-            <span className={`ml-1.5 text-xs py-0.5 px-1.5 rounded-full ${
-              roleFilter === tab.id ? 'bg-white/20 text-white dark:text-slate-900 dark:bg-slate-900/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
-            }`}>
-              {tab.id === 'ALL' ? users.length : users.filter(u => u.role === tab.id).length}
-            </span>
-          </button>
-        ))}
+            <option value="ALL">Todas las carreras</option>
+            {careers.map(c => (
+              <option key={c.id} value={c.name}>{c.name}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Tabla */}
