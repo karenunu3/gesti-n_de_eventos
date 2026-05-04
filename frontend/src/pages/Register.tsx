@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
 import { validateDocument, getPasswordStrength } from '../lib/validators';
 import type { PasswordStrength } from '../lib/validators';
-import { UserPlus, Mail, KeySquare, User, CreditCard, GraduationCap, BookOpen, Eye, EyeOff, Check, X } from 'lucide-react';
+import { UserPlus, Mail, KeySquare, User, CreditCard, GraduationCap, Eye, EyeOff, Check, X } from 'lucide-react';
 
 const PasswordStrengthBar = ({ strength }: { strength: PasswordStrength }) => {
   if (!strength.score && strength.label === '') return null;
