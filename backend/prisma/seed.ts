@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -12,129 +13,164 @@ const prisma = new PrismaClient({ adapter });
 const ISTPET_LAT = -0.2824216;
 const ISTPET_LNG = -78.5555266;
 
-const addDays = (base: Date, days: number) => {
+const addDays = (base: Date, days: number, hour = 9) => {
   const d = new Date(base);
   d.setDate(d.getDate() + days);
-  d.setHours(9, 0, 0, 0);
-  return d;
-};
-
-const addDaysEnd = (base: Date, days: number, endHour = 17) => {
-  const d = new Date(base);
-  d.setDate(d.getDate() + days);
-  d.setHours(endHour, 0, 0, 0);
+  d.setHours(hour, 0, 0, 0);
   return d;
 };
 
 async function main() {
   const now = new Date();
+  const defaultPassword = await bcrypt.hash('password123', 10);
 
-  // Upsert careers
-  const [soft, conta, admin, elec, redes] = await Promise.all([
-    prisma.career.upsert({ where: { name: 'Desarrollo de Software' }, update: {}, create: { name: 'Desarrollo de Software' } }),
-    prisma.career.upsert({ where: { name: 'Contabilidad' }, update: {}, create: { name: 'Contabilidad' } }),
-    prisma.career.upsert({ where: { name: 'Administración de Empresas' }, update: {}, create: { name: 'Administración de Empresas' } }),
-    prisma.career.upsert({ where: { name: 'Electrónica' }, update: {}, create: { name: 'Electrónica' } }),
-    prisma.career.upsert({ where: { name: 'Redes y Telecomunicaciones' }, update: {}, create: { name: 'Redes y Telecomunicaciones' } }),
-  ]);
+  console.log('🧹 Limpiando datos antiguos...');
+  await prisma.survey.deleteMany();
+  await prisma.certificate.deleteMany();
+  await prisma.eventAttendance.deleteMany();
+  await prisma.eventRegistration.deleteMany();
+  await prisma.event.deleteMany();
+  await prisma.user.deleteMany();
 
+  console.log('📚 Creando carreras...');
+  const careersData = ['Desarrollo de Software', 'Contabilidad', 'Administración de Empresas', 'Electrónica', 'Redes y Telecomunicaciones'];
+  const careers = await Promise.all(
+    careersData.map(name => prisma.career.upsert({
+      where: { name }, update: {}, create: { name }
+    }))
+  );
+
+  console.log('👥 Creando usuarios (Personal)...');
+  const admin = await prisma.user.create({
+    data: { email: 'admin@istpet.edu.ec', password: defaultPassword, firstName: 'Admin', lastName: 'Sistema', dni: '0000000001', role: 'ADMIN' }
+  });
+
+  const sec = await prisma.user.create({
+    data: { email: 'secretaria@istpet.edu.ec', password: defaultPassword, firstName: 'María', lastName: 'López', dni: '0000000002', role: 'SECRETARIA' }
+  });
+
+  const doc1 = await prisma.user.create({
+    data: { email: 'docente1@istpet.edu.ec', password: defaultPassword, firstName: 'Carlos', lastName: 'Mendoza', dni: '0000000003', role: 'DOCENTE', careerId: careers[0].id }
+  });
+
+  const doc2 = await prisma.user.create({
+    data: { email: 'docente2@istpet.edu.ec', password: defaultPassword, firstName: 'Ana', lastName: 'Torres', dni: '0000000004', role: 'DOCENTE', careerId: careers[1].id }
+  });
+
+  console.log('🎓 Creando alumnos...');
+  const alumnos = [];
+  for (let i = 1; i <= 15; i++) {
+    const career = careers[i % careers.length];
+    const alumno = await prisma.user.create({
+      data: {
+        email: `alumno${i}@istpet.edu.ec`,
+        password: defaultPassword,
+        firstName: `Estudiante`,
+        lastName: `Número ${i}`,
+        dni: `17000000${i.toString().padStart(2, '0')}`,
+        role: 'ALUMNO',
+        careerId: career.id,
+      }
+    });
+    alumnos.push(alumno);
+  }
+
+  console.log('📅 Creando eventos...');
   const events = [
+    // --- EVENTOS PASADOS ---
     {
-      title: 'Charla: Oportunidades Laborales en el Sector Tecnológico',
-      description: 'Empresas líderes del Ecuador presentan oportunidades de pasantías y empleo para egresados y estudiantes de últimos semestres. Networking al finalizar.',
-      startDate: addDays(now, 3),
-      endDate: addDaysEnd(now, 3, 13),
-      hours: 4,
-      capacity: 80,
-      isTransversal: true,
-      careers: [],
+      title: 'Charla: Ciberseguridad Básica',
+      description: 'Conceptos fundamentales de protección de datos.',
+      startDate: addDays(now, -10, 9), endDate: addDays(now, -10, 13),
+      hours: 4, capacity: 50, isTransversal: true, careers: []
     },
     {
-      title: 'Seminario de Emprendimiento e Innovación',
-      description: 'Desarrolla tu proyecto de negocios con mentores del sector empresarial ecuatoriano. Incluye talleres prácticos, casos de éxito y sesión de networking.',
-      startDate: addDays(now, 7),
-      endDate: addDaysEnd(now, 7, 18),
-      hours: 8,
-      capacity: 60,
-      isTransversal: true,
-      careers: [],
+      title: 'Workshop: Inteligencia Artificial',
+      description: 'Uso de LLMs en el desarrollo de software.',
+      startDate: addDays(now, -5, 14), endDate: addDays(now, -5, 18),
+      hours: 4, capacity: 30, isTransversal: false, careers: [careers[0], careers[4]]
+    },
+    // --- EVENTOS FUTUROS ---
+    {
+      title: 'Feria de Emprendimiento',
+      description: 'Proyectos de los estudiantes de Administración.',
+      startDate: addDays(now, 5, 9), endDate: addDays(now, 5, 15),
+      hours: 6, capacity: 100, isTransversal: true, careers: []
     },
     {
-      title: 'Taller de Programación con Python para Datos',
-      description: 'Introducción práctica a Python orientado a análisis de datos, automatización y machine learning básico. Requiere laptop.',
-      startDate: addDays(now, 10),
-      endDate: addDaysEnd(now, 10, 16),
-      hours: 6,
-      capacity: 30,
-      isTransversal: false,
-      careers: [soft, redes],
-    },
-    {
-      title: 'Conferencia: Ética y Responsabilidad Profesional',
-      description: 'Jornada académica sobre valores institucionales, ética en el ejercicio profesional y responsabilidad social en el Ecuador contemporáneo.',
-      startDate: addDays(now, 14),
-      endDate: addDaysEnd(now, 14, 14),
-      hours: 4,
-      capacity: 120,
-      isTransversal: true,
-      careers: [],
-    },
-    {
-      title: 'Workshop: Finanzas Personales e Inversión',
-      description: 'Taller práctico sobre presupuesto, ahorro, crédito e inversiones para jóvenes profesionales. Con casos reales del mercado ecuatoriano.',
-      startDate: addDays(now, 17),
-      endDate: addDaysEnd(now, 17, 15),
-      hours: 5,
-      capacity: 40,
-      isTransversal: false,
-      careers: [conta, admin],
-    },
-    {
-      title: 'Feria de Ciencias e Innovación Tecnológica 2025',
-      description: 'Exposición de proyectos de titulación e innovación de los estudiantes del ISTPET. Participa como expositor o visitante.',
-      startDate: addDays(now, 22),
-      endDate: addDaysEnd(now, 23, 18),
-      hours: 16,
-      capacity: null,
-      isTransversal: true,
-      careers: [],
-    },
-    {
-      title: 'Capacitación en Mantenimiento de Redes Industriales',
-      description: 'Actualización técnica sobre protocolos industriales, PLC y automatización de procesos orientada a perfiles de Electrónica y Redes.',
-      startDate: addDays(now, 28),
-      endDate: addDaysEnd(now, 28, 17),
-      hours: 8,
-      capacity: 25,
-      isTransversal: false,
-      careers: [elec, redes],
-    },
-    {
-      title: 'Jornada de Bienvenida e Integración Institucional',
-      description: 'Evento de integración para estudiantes nuevos y reingresos. Presentación de servicios, reglamentos y actividades extracurriculares del ISTPET.',
-      startDate: addDays(now, 35),
-      endDate: addDaysEnd(now, 35, 13),
-      hours: 3,
-      capacity: 200,
-      isTransversal: true,
-      careers: [],
-    },
+      title: 'Taller de Python para Datos',
+      description: 'Machine learning básico.',
+      startDate: addDays(now, 10, 10), endDate: addDays(now, 10, 16),
+      hours: 6, capacity: 25, isTransversal: false, careers: [careers[0]]
+    }
   ];
 
-  for (const { careers, ...data } of events) {
-    await prisma.event.create({
+  const dbEvents = [];
+  for (const { careers: evCareers, ...data } of events) {
+    const ev = await prisma.event.create({
       data: {
-        ...data,
-        latitude: ISTPET_LAT,
-        longitude: ISTPET_LNG,
-        radiusMeters: 200,
-        careers: careers.length > 0 ? { connect: careers.map(c => ({ id: c.id })) } : undefined,
+        ...data, latitude: ISTPET_LAT, longitude: ISTPET_LNG, radiusMeters: 200,
+        careers: evCareers.length > 0 ? { connect: evCareers.map(c => ({ id: c.id })) } : undefined,
       },
+    });
+    dbEvents.push(ev);
+  }
+
+  console.log('✅ Simulando registros, asistencias y encuestas...');
+  const pastEvent1 = dbEvents[0];
+  const pastEvent2 = dbEvents[1];
+
+  // Inscribir alumnos a eventos pasados
+  for (let i = 0; i < 10; i++) {
+    const student = alumnos[i];
+    
+    // Evento 1
+    await prisma.eventRegistration.create({ data: { eventId: pastEvent1.id, userId: student.id } });
+    
+    // Simular asistencia válida (Check In y Check Out)
+    await prisma.eventAttendance.create({
+      data: {
+        eventId: pastEvent1.id, userId: student.id,
+        latitude: ISTPET_LAT, longitude: ISTPET_LNG, photoUrl: '/mock.jpg', isValid: true,
+        recordedAt: pastEvent1.startDate,
+        checkOutAt: pastEvent1.endDate,
+        checkOutLatitude: ISTPET_LAT, checkOutLongitude: ISTPET_LNG, isCheckOutValid: true
+      }
+    });
+
+    // Simular encuesta
+    await prisma.survey.create({
+      data: {
+        eventId: pastEvent1.id, userId: student.id,
+        rating: Math.floor(Math.random() * 2) + 4, // 4 o 5
+        feedback: 'Excelente evento, aprendí mucho.'
+      }
     });
   }
 
-  console.log(`✅ Seed completado: ${events.length} eventos próximos creados`);
-  console.log('   Carreras disponibles: Desarrollo de Software, Contabilidad, Administración, Electrónica, Redes');
+  // Evento 2 (solo 5 alumnos)
+  for (let i = 0; i < 5; i++) {
+    const student = alumnos[i];
+    await prisma.eventRegistration.create({ data: { eventId: pastEvent2.id, userId: student.id } });
+    await prisma.eventAttendance.create({
+      data: {
+        eventId: pastEvent2.id, userId: student.id,
+        latitude: ISTPET_LAT, longitude: ISTPET_LNG, photoUrl: '/mock.jpg', isValid: true,
+        recordedAt: pastEvent2.startDate,
+        checkOutAt: pastEvent2.endDate,
+        checkOutLatitude: ISTPET_LAT, checkOutLongitude: ISTPET_LNG, isCheckOutValid: true
+      }
+    });
+  }
+
+  console.log('🎉 Simulación completada con éxito.');
+  console.log('--------------------------------------------------');
+  console.log('🔑 Credenciales de prueba generadas (Contraseña: password123)');
+  console.log(' - Admin:      admin@istpet.edu.ec');
+  console.log(' - Secretaria: secretaria@istpet.edu.ec');
+  console.log(' - Docente 1:  docente1@istpet.edu.ec');
+  console.log(' - Docente 2:  docente2@istpet.edu.ec');
+  console.log(' - Alumnos:    alumno1@istpet.edu.ec hasta alumno15@istpet.edu.ec');
 }
 
 main()
