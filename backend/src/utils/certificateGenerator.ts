@@ -140,77 +140,29 @@ export const generateProfessionalCertificate = async (
         { align: 'center' }
       );
 
-      // === SELLO ===
-      if (fs.existsSync(selloPath)) {
-        doc.image(selloPath, width - 180, height - 190, { width: 110 });
-      }
-
-      // === CÓDIGO QR Y VERIFICACIÓN (Abajo a la izquierda, bien posicionado) ===
+      // === CÓDIGO QR Y VERIFICACIÓN (Abajo a la izquierda) ===
       const qrUrl = `${options.frontendUrl}/verify/${options.certificateCode}`;
       const qrDataUrl = await QRCode.toDataURL(qrUrl, {
         errorCorrectionLevel: 'H',
-        width: 90,
+        width: 100,
         margin: 1
       });
 
-      const qrY = height - 150; // Posición Y segura (595 - 150 = 445)
-      doc.image(qrDataUrl, 80, qrY, { width: 80, height: 80 });
+      const qrY = height - 160;
+      doc.image(qrDataUrl, 80, qrY, { width: 100, height: 100 });
 
-      // === FIRMA DIGITAL RSA ===
-      let signatureBase64 = 'N/A';
-      try {
-        const privateKey = process.env.PRIVATE_KEY;
-        if (privateKey) {
-          const dataToSign = `${options.studentName}|${options.eventTitle}|${options.certificateCode}`;
-          const sign = crypto.createSign('SHA256');
-          sign.update(dataToSign);
-          sign.end();
-          signatureBase64 = sign.sign(privateKey, 'base64');
-        } else {
-          const hash = crypto.createHash('sha256');
-          hash.update(`${options.studentName}|${options.eventTitle}|${options.certificateCode}`);
-          signatureBase64 = hash.digest('base64');
-        }
-      } catch (e) {
-        console.error('Error al generar firma:', e);
-      }
-
-      // Textos de verificación junto al QR
-      doc.fontSize(8).font('Helvetica-Bold').fillColor('#1F295B').text(
-        'CÓDIGO DE VERIFICACIÓN:',
-        170, qrY + 10
-      );
-      doc.fontSize(9).font('Helvetica').fillColor('#666666').text(
-        options.certificateCode,
-        170, qrY + 22
-      );
-
-      doc.fontSize(7).font('Helvetica-Bold').fillColor('#1F295B').text(
-        'FIRMA DIGITAL (SHA256):',
-        170, qrY + 40
-      );
-      doc.fontSize(6).font('Helvetica').fillColor('#888888').text(
-        signatureBase64.substring(0, 55) + '...',
-        170, qrY + 50
-      );
-
-      doc.fontSize(8).font('Helvetica').fillColor('#D4AF37').text(
-        'Valide este certificado en: verify.istpet.edu.ec',
-        170, qrY + 65
-      );
-
-      // === FIRMA AUTORIZADA ===
+      // === FIRMA AUTORIZADA (Abajo a la derecha) ===
       doc.strokeColor('#1F295B').lineWidth(1);
-      doc.moveTo(width / 2 - 100, height - 90).lineTo(width / 2 + 100, height - 90).stroke();
+      doc.moveTo(width - 280, height - 90).lineTo(width - 80, height - 90).stroke();
       doc.fontSize(10).font('Helvetica-Bold').fillColor('#1F295B').text(
         'COORDINACIÓN ACADÉMICA',
-        0, height - 85,
-        { align: 'center' }
+        width - 280, height - 85,
+        { width: 200, align: 'center' }
       );
       doc.fontSize(8).font('Helvetica').fillColor('#666666').text(
         'ISTPET - Excelencia Académica',
-        0, height - 73,
-        { align: 'center' }
+        width - 280, height - 73,
+        { width: 200, align: 'center' }
       );
 
       doc.end();

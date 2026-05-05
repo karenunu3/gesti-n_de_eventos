@@ -97,7 +97,8 @@ export const generateCertificate = async (req: any, res: Response): Promise<void
          const blobResult = await put(`certificados/${fileName}`, pdfBuffer, {
            access: 'public',
            contentType: 'application/pdf',
-           addRandomSuffix: false // Para mantener el nombre exacto
+           addRandomSuffix: false, // Para mantener el nombre exacto
+           allowOverwrite: true // Permite sobrescribir el archivo si el alumno lo vuelve a generar
          });
          pdfUrl = blobResult.url;
       } else {
