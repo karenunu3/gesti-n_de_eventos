@@ -110,7 +110,7 @@ export const generateCertificate = async (req: any, res: Response): Promise<void
       }
     } catch (blobError: any) {
       console.error('Error subiendo a Vercel Blob:', blobError);
-      res.status(500).json({ message: 'Error al subir certificado a Vercel Blob', error: blobError.message });
+      res.status(500).json({ message: `Error Vercel Blob: ${blobError.message}` });
       return;
     }
 
