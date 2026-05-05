@@ -45,151 +45,116 @@ export const generateProfessionalCertificate = async (
         resolve(pdfData);
       });
 
-      // Dimensiones
-      const width = doc.page.width;
-      const height = doc.page.height;
+      const width = doc.page.width; // 841.89
+      const height = doc.page.height; // 595.28
 
-      // === FONDO GRADIENTE (Azul a Dorado) ===
-      doc.rect(0, 0, width, height).fill('#1F295B');
+      // === FONDO BLANCO ELEGANTE ===
+      doc.rect(0, 0, width, height).fill('#FAFAFC');
 
-      // === BORDE DECORATIVO ===
-      doc.strokeColor('#D4AF37').lineWidth(3);
-      doc.rect(30, 30, width - 60, height - 60).stroke();
+      // === BORDES DECORATIVOS ===
+      // Borde externo grueso azul
+      doc.strokeColor('#1F295B').lineWidth(4);
+      doc.rect(40, 40, width - 80, height - 80).stroke();
 
-      doc.strokeColor('#D4AF37').lineWidth(1);
-      doc.rect(45, 45, width - 90, height - 90).stroke();
-
-      // === ESQUINAS DECORATIVAS ===
-      const cornerSize = 15;
-      const corners = [
-        { x: 30, y: 30 },
-        { x: width - 30, y: 30 },
-        { x: 30, y: height - 30 },
-        { x: width - 30, y: height - 30 },
-      ];
-
-      doc.fillColor('#D4AF37');
-      corners.forEach(({ x, y }) => {
-        doc.circle(x, y, cornerSize / 2).fill();
-      });
+      // Borde interno fino dorado
+      doc.strokeColor('#D4AF37').lineWidth(1.5);
+      doc.rect(48, 48, width - 96, height - 96).stroke();
 
       // === ASSETS VISUALES ===
       const logoPath = path.join(__dirname, '../assets/logo.png');
       const selloPath = path.join(__dirname, '../assets/sello.png');
 
       if (fs.existsSync(logoPath)) {
-        doc.image(logoPath, width / 2 - 40, 20, { width: 80 });
+        // Logo superior centrado
+        doc.image(logoPath, width / 2 - 110, 60, { width: 220 });
+      } else {
+        doc.fontSize(24).font('Helvetica-Bold').fillColor('#1F295B').text('ISTPET', 0, 80, { align: 'center' });
       }
 
-      // === CONTENIDO ===
-      doc.fillColor('#FFFFFF');
-
-      if (!fs.existsSync(logoPath)) {
-        doc.fontSize(20).font('Helvetica-Bold').text('ISTPET', width / 2 - 40, 60, { width: 80, align: 'center' });
-      }
-
-      doc.fontSize(12).font('Helvetica').text(
-        'Instituto Superior Tecnológico Público "Eleazar Tovar"',
-        50,
-        100,
-        { width: width - 100, align: 'center' }
-      );
-
-      // Línea decorativa
-      doc.strokeColor('#D4AF37').lineWidth(2);
-      doc.moveTo(100, 125).lineTo(width - 100, 125).stroke();
-
-      // Título del certificado
-      doc.fontSize(28).font('Helvetica-Bold').fillColor('#D4AF37').text(
-        'CERTIFICADO DE PARTICIPACIÓN',
-        50,
-        155,
-        { width: width - 100, align: 'center' }
-      );
-
-      doc.fontSize(14).font('Helvetica').fillColor('#FFFFFF').text(
-        'EN EVENTO ACADÉMICO',
-        50,
-        190,
-        { width: width - 100, align: 'center' }
-      );
-
-      // Contenido principal
-      doc.fontSize(12).fillColor('#FFFFFF').font('Helvetica').text(
+      // === ENCABEZADO ===
+      doc.moveDown(4);
+      doc.fontSize(12).font('Helvetica').fillColor('#666666').text(
         'El Instituto Superior Tecnológico Público "Eleazar Tovar"',
-        50,
-        240,
-        { width: width - 100, align: 'center' }
+        0, 160,
+        { align: 'center' }
+      );
+      doc.fontSize(11).font('Helvetica-Oblique').fillColor('#888888').text(
+        'Otorga el presente',
+        0, 180,
+        { align: 'center' }
       );
 
-      doc.text('Otorga el presente certificado a:', 50, 265, { width: width - 100, align: 'center' });
+      // === TÍTULO PRINCIPAL ===
+      doc.fontSize(32).font('Helvetica-Bold').fillColor('#1F295B').text(
+        'CERTIFICADO DE PARTICIPACIÓN',
+        0, 215,
+        { align: 'center', characterSpacing: 2 }
+      );
 
-      // === ZONA DE NOMBRE (Recuadro decorativo) ===
-      doc.rect(100, 295, width - 200, 70).strokeColor('#D4AF37').lineWidth(2).stroke();
+      // === DATOS DEL ALUMNO ===
+      doc.fontSize(12).font('Helvetica').fillColor('#666666').text(
+        'A nombre de:',
+        0, 270,
+        { align: 'center' }
+      );
 
-      doc.fontSize(22).font('Helvetica-Bold').fillColor('#D4AF37').text(
+      // Nombre del alumno destacado
+      doc.fontSize(26).font('Helvetica-Bold').fillColor('#D4AF37').text(
         options.studentName.toUpperCase(),
-        110,
-        320,
-        { width: width - 220, align: 'center' }
+        0, 290,
+        { align: 'center' }
       );
 
-      doc.fontSize(12).font('Helvetica').fillColor('#FFFFFF').text(
+      // Línea dorada debajo del nombre
+      doc.strokeColor('#D4AF37').lineWidth(1);
+      doc.moveTo(width / 2 - 180, 325).lineTo(width / 2 + 180, 325).stroke();
+
+      doc.fontSize(12).font('Helvetica').fillColor('#666666').text(
         `Carrera: ${options.careerName}`,
-        110,
-        350,
-        { width: width - 220, align: 'center' }
+        0, 335,
+        { align: 'center' }
       );
 
-      // Descripción del evento
-      doc.fontSize(11).fillColor('#FFFFFF').font('Helvetica').text(
-        'Por su participación en el evento:',
-        50,
-        400,
-        { width: width - 100, align: 'center' }
+      // === DETALLES DEL EVENTO ===
+      doc.fontSize(12).fillColor('#444444').font('Helvetica').text(
+        'Por haber aprobado satisfactoriamente el evento académico:',
+        0, 380,
+        { align: 'center' }
       );
 
-      doc.fontSize(14).font('Helvetica-Bold').fillColor('#D4AF37').text(
+      doc.fontSize(16).font('Helvetica-Bold').fillColor('#1F295B').text(
         `"${options.eventTitle}"`,
-        50,
-        425,
-        { width: width - 100, align: 'center' }
+        0, 400,
+        { align: 'center' }
       );
 
-      // Detalles del evento
       const eventDate = new Date(options.eventDate);
       const dayOfMonth = eventDate.getDate();
       const month = MONTHS_ES[eventDate.getMonth()];
       const year = eventDate.getFullYear();
       const formattedDate = `${dayOfMonth} de ${month} de ${year}`;
 
-      doc.fontSize(11).font('Helvetica').fillColor('#FFFFFF').text(
-        `Realizado el: ${formattedDate} | Duración: ${options.hours} hora${options.hours > 1 ? 's' : ''}`,
-        50,
-        455,
-        { width: width - 100, align: 'center' }
+      doc.fontSize(11).font('Helvetica').fillColor('#666666').text(
+        `Realizado el ${formattedDate} con una duración de ${options.hours} hora${options.hours > 1 ? 's' : ''} académicas.`,
+        0, 425,
+        { align: 'center' }
       );
 
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('#D4AF37').text(
-        `Se han acreditado ${options.hours} hora${options.hours > 1 ? 's' : ''} de actividad académica`,
-        50,
-        485,
-        { width: width - 100, align: 'center' }
-      );
+      // === SELLO ===
+      if (fs.existsSync(selloPath)) {
+        doc.image(selloPath, width - 180, height - 190, { width: 110 });
+      }
 
-      // === CÓDIGO QR Y VERIFICACIÓN ===
+      // === CÓDIGO QR Y VERIFICACIÓN (Abajo a la izquierda, bien posicionado) ===
       const qrUrl = `${options.frontendUrl}/verify/${options.certificateCode}`;
       const qrDataUrl = await QRCode.toDataURL(qrUrl, {
         errorCorrectionLevel: 'H',
-        width: 100,
+        width: 90,
+        margin: 1
       });
 
-      // QR Code (lado izquierdo)
-      doc.image(qrDataUrl, 70, 520, { width: 100, height: 100 });
-
-      if (fs.existsSync(selloPath)) {
-        doc.image(selloPath, width - 170, 470, { width: 100 });
-      }
+      const qrY = height - 150; // Posición Y segura (595 - 150 = 445)
+      doc.image(qrDataUrl, 80, qrY, { width: 80, height: 80 });
 
       // === FIRMA DIGITAL RSA ===
       let signatureBase64 = 'N/A';
@@ -202,7 +167,6 @@ export const generateProfessionalCertificate = async (
           sign.end();
           signatureBase64 = sign.sign(privateKey, 'base64');
         } else {
-          // Fallback para desarrollo: Hash simple si no hay llave
           const hash = crypto.createHash('sha256');
           hash.update(`${options.studentName}|${options.eventTitle}|${options.certificateCode}`);
           signatureBase64 = hash.digest('base64');
@@ -211,54 +175,42 @@ export const generateProfessionalCertificate = async (
         console.error('Error al generar firma:', e);
       }
 
-      // Información de verificación (lado derecho)
-      doc.fontSize(10).font('Helvetica').fillColor('#FFFFFF').text(
-        'Código de Verificación:',
-        190,
-        520
+      // Textos de verificación junto al QR
+      doc.fontSize(8).font('Helvetica-Bold').fillColor('#1F295B').text(
+        'CÓDIGO DE VERIFICACIÓN:',
+        170, qrY + 10
       );
-
-      doc.fontSize(8).font('Helvetica-Bold').fillColor('#D4AF37').text(
+      doc.fontSize(9).font('Helvetica').fillColor('#666666').text(
         options.certificateCode,
-        190,
-        538,
-        { width: width - 260, align: 'left' }
+        170, qrY + 22
       );
 
-      doc.fontSize(9).font('Helvetica').fillColor('#FFFFFF').text(
-        `Fecha de Emisión: ${dayOfMonth}/${eventDate.getMonth() + 1}/${year}`,
-        190,
-        565
+      doc.fontSize(7).font('Helvetica-Bold').fillColor('#1F295B').text(
+        'FIRMA DIGITAL (SHA256):',
+        170, qrY + 40
       );
-
-      // Mostrar primeros 40 caracteres de la firma digital
-      doc.fontSize(7).font('Helvetica').fillColor('#FFFFFF').text(
-        `Firma Digital (SHA256-RSA):`,
-        190,
-        583
-      );
-      doc.fontSize(6).font('Helvetica').fillColor('#D4AF37').text(
-        signatureBase64.substring(0, 50) + '...',
-        190,
-        595
+      doc.fontSize(6).font('Helvetica').fillColor('#888888').text(
+        signatureBase64.substring(0, 55) + '...',
+        170, qrY + 50
       );
 
       doc.fontSize(8).font('Helvetica').fillColor('#D4AF37').text(
-        'verify.istpet.edu.pe',
-        190,
-        610
+        'Valide este certificado en: verify.istpet.edu.ec',
+        170, qrY + 65
       );
 
-      // Línea decorativa final
-      doc.strokeColor('#D4AF37').lineWidth(1);
-      doc.moveTo(50, 630).lineTo(width - 50, 630).stroke();
-
-      // Pie de página
-      doc.fontSize(9).font('Helvetica').fillColor('#D4AF37').text(
-        'Emitido por: ISTPET - Sistema de Gestión de Eventos',
-        50,
-        640,
-        { width: width - 100, align: 'center' }
+      // === FIRMA AUTORIZADA ===
+      doc.strokeColor('#1F295B').lineWidth(1);
+      doc.moveTo(width / 2 - 100, height - 90).lineTo(width / 2 + 100, height - 90).stroke();
+      doc.fontSize(10).font('Helvetica-Bold').fillColor('#1F295B').text(
+        'COORDINACIÓN ACADÉMICA',
+        0, height - 85,
+        { align: 'center' }
+      );
+      doc.fontSize(8).font('Helvetica').fillColor('#666666').text(
+        'ISTPET - Excelencia Académica',
+        0, height - 73,
+        { align: 'center' }
       );
 
       doc.end();
