@@ -3,7 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
 import { validateDocument, getPasswordStrength } from '../lib/validators';
 import type { PasswordStrength } from '../lib/validators';
-import { UserPlus, Mail, KeySquare, User, CreditCard, GraduationCap, Eye, EyeOff, Check, X } from 'lucide-react';
+import { MODALITIES, filterCareersByModality } from '../lib/modalities';
+import type { ModalityId } from '../lib/modalities';
+import { UserPlus, Mail, KeySquare, User, CreditCard, GraduationCap, Eye, EyeOff, Check, X, Building2 } from 'lucide-react';
 
 const PasswordStrengthBar = ({ strength }: { strength: PasswordStrength }) => {
   if (!strength.score && strength.label === '') return null;
@@ -46,6 +48,7 @@ const Register = () => {
   const navigate = useNavigate();
 
   const [careers, setCareers] = useState<any[]>([]);
+  const [modalityId, setModalityId] = useState<ModalityId | ''>('');
   const [docType, setDocType] = useState<'CI' | 'PASAPORTE'>('CI');
   const [form, setForm] = useState({
     firstName: '',
@@ -120,6 +123,7 @@ const Register = () => {
           password: form.password,
           role: form.role,
           careerId: form.careerId ? parseInt(form.careerId) : null,
+          modality: modalityId || null,
           semester: form.semester ? parseInt(form.semester) : null,
         }),
       });
@@ -249,6 +253,28 @@ const Register = () => {
                 {docError && <p className="text-red-400 text-xs mt-1">{docError}</p>}
               </div>
 
+              {/* Modalidad */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Modalidad</label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                  <select
+                    className={`${inputClass} appearance-none`}
+                    value={modalityId}
+                    onChange={e => {
+                      setModalityId(e.target.value as ModalityId | '');
+                      set('careerId', '');
+                    }}
+                    required
+                  >
+                    <option value="">Selecciona modalidad</option>
+                    {MODALITIES.map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               {/* Carrera y Semestre */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -256,13 +282,14 @@ const Register = () => {
                   <div className="relative">
                     <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                     <select
-                      className={`${inputClass} appearance-none`}
+                      className={`${inputClass} appearance-none disabled:opacity-60 disabled:cursor-not-allowed`}
                       value={form.careerId}
                       onChange={e => set('careerId', e.target.value)}
                       required
+                      disabled={!modalityId}
                     >
-                      <option value="">Selecciona carrera</option>
-                      {careers.map(c => (
+                      <option value="">{modalityId ? 'Selecciona carrera' : 'Elige modalidad primero'}</option>
+                      {filterCareersByModality(careers, modalityId).map(c => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                     </select>

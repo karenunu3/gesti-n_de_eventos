@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { fetchApi } from '../lib/api';
 import { validateDocument, getPasswordStrength } from '../lib/validators';
 import type { PasswordStrength } from '../lib/validators';
+import { MODALITIES, filterCareersByModality } from '../lib/modalities';
+import type { ModalityId } from '../lib/modalities';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, Shield, ShieldAlert, BookOpen, GraduationCap, ArrowLeft,
@@ -63,6 +65,7 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm]       = useState({ ...emptyForm });
+  const [modalityId, setModalityId] = useState<ModalityId | ''>('');
   const [docError, setDocError] = useState('');
   const [formError, setFormError]   = useState('');
   const [formLoading, setFormLoading] = useState(false);
@@ -111,6 +114,7 @@ const AdminUsers = () => {
 
   const openModal = () => {
     setForm({ ...emptyForm });
+    setModalityId('');
     setFormError('');
     setDocError('');
     setShowModal(true);
@@ -143,6 +147,7 @@ const AdminUsers = () => {
           password: form.password,
           role: form.role,
           careerId: form.careerId || null,
+          modality: modalityId || null,
         }),
       });
       setShowModal(false);
@@ -166,11 +171,11 @@ const AdminUsers = () => {
     }
   };
 
-  const handleCareerChange = async (id: number, newCareerId: string) => {
+  const handleCareerChange = async (id: number, newCareerId: string, newModality: string | null) => {
     try {
       await fetchApi(`/users/${id}/career`, {
         method: 'PUT',
-        body: JSON.stringify({ careerId: newCareerId || null }),
+        body: JSON.stringify({ careerId: newCareerId || null, modality: newModality }),
       });
       loadUsers();
     } catch (err: any) {
@@ -332,14 +337,27 @@ const AdminUsers = () => {
                         <span className="italic text-slate-400 dark:text-slate-500">N/A</span>
                       ) : (
                         <select
-                          value={u.career?.id || ''}
-                          onChange={e => handleCareerChange(u.id, e.target.value)}
+                          value={u.modality && u.career?.id ? `${u.modality}|${u.career.id}` : ''}
+                          onChange={e => {
+                            const v = e.target.value;
+                            if (!v) { handleCareerChange(u.id, '', null); return; }
+                            const [mod, cid] = v.split('|');
+                            handleCareerChange(u.id, cid, mod);
+                          }}
                           className="text-xs bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-istpet-blue dark:focus:ring-istpet-gold transition-colors w-full min-w-[120px]"
                         >
                           <option value="">Sin carrera</option>
-                          {careers.map(c => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                          ))}
+                          {MODALITIES.map(m => {
+                            const opts = filterCareersByModality(careers, m.id);
+                            if (opts.length === 0) return null;
+                            return (
+                              <optgroup key={m.id} label={m.name}>
+                                {opts.map(c => (
+                                  <option key={`${m.id}-${c.id}`} value={`${m.id}|${c.id}`}>{c.name}</option>
+                                ))}
+                              </optgroup>
+                            );
+                          })}
                         </select>
                       )}
                     </td>
@@ -482,12 +500,32 @@ const AdminUsers = () => {
               </div>
 
               {(form.role === 'ALUMNO' || form.role === 'DOCENTE') && (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Carrera</label>
-                  <select className={inputClass} value={form.careerId} onChange={e => set('careerId', e.target.value)}>
-                    <option value="">Sin carrera</option>
-                    {careers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Modalidad</label>
+                    <select
+                      className={inputClass}
+                      value={modalityId}
+                      onChange={e => {
+                        setModalityId(e.target.value as ModalityId | '');
+                        set('careerId', '');
+                      }}
+                    >
+                      <option value="">Todas</option>
+                      {MODALITIES.map(m => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Carrera</label>
+                    <select className={inputClass} value={form.careerId} onChange={e => set('careerId', e.target.value)}>
+                      <option value="">Sin carrera</option>
+                      {filterCareersByModality(careers, modalityId).map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               )}
 

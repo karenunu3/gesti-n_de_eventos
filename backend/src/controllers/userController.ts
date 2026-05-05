@@ -13,6 +13,7 @@ export const getUsers = async (req: any, res: any): Promise<void> => {
         dni: true,
         role: true,
         career: true,
+        modality: true,
         createdAt: true
       },
       orderBy: { createdAt: 'desc' }
@@ -25,7 +26,7 @@ export const getUsers = async (req: any, res: any): Promise<void> => {
 
 export const createUser = async (req: any, res: any): Promise<void> => {
   try {
-    const { email, password, firstName, lastName, dni, role, careerId } = req.body;
+    const { email, password, firstName, lastName, dni, role, careerId, modality } = req.body;
 
     if (!email || !password || !firstName || !lastName || !dni) {
       res.status(400).json({ message: 'Todos los campos obligatorios deben estar completos.' });
@@ -54,9 +55,10 @@ export const createUser = async (req: any, res: any): Promise<void> => {
         lastName,
         dni,
         role: assignedRole,
-        careerId: careerId ? parseInt(careerId) : null
+        careerId: careerId ? parseInt(careerId) : null,
+        modality: modality || null
       },
-      select: { id: true, email: true, firstName: true, lastName: true, dni: true, role: true, career: true, createdAt: true }
+      select: { id: true, email: true, firstName: true, lastName: true, dni: true, role: true, career: true, modality: true, createdAt: true }
     });
 
     res.status(201).json(newUser);
@@ -110,12 +112,15 @@ export const updateUserRole = async (req: any, res: any): Promise<void> => {
 export const updateUserCareer = async (req: any, res: any): Promise<void> => {
   try {
     const { id } = req.params;
-    const { careerId } = req.body;
-    
+    const { careerId, modality } = req.body;
+
     const updatedUser = await prisma.user.update({
       where: { id: parseInt(id) },
-      data: { careerId: careerId ? parseInt(careerId) : null },
-      select: { id: true, email: true, role: true, career: true }
+      data: {
+        careerId: careerId ? parseInt(careerId) : null,
+        ...(modality !== undefined ? { modality: modality || null } : {})
+      },
+      select: { id: true, email: true, role: true, career: true, modality: true }
     });
 
     res.status(200).json(updatedUser);
