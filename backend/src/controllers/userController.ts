@@ -106,3 +106,20 @@ export const updateUserRole = async (req: any, res: any): Promise<void> => {
     res.status(500).json({ message: 'Error al actualizar rol', error: error.message });
   }
 };
+
+export const updateUserCareer = async (req: any, res: any): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { careerId } = req.body;
+    
+    const updatedUser = await prisma.user.update({
+      where: { id: parseInt(id) },
+      data: { careerId: careerId ? parseInt(careerId) : null },
+      select: { id: true, email: true, role: true, career: true }
+    });
+
+    res.status(200).json(updatedUser);
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error al actualizar carrera', error: error.message });
+  }
+};

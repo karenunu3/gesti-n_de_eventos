@@ -166,6 +166,18 @@ const AdminUsers = () => {
     }
   };
 
+  const handleCareerChange = async (id: number, newCareerId: string) => {
+    try {
+      await fetchApi(`/users/${id}/career`, {
+        method: 'PUT',
+        body: JSON.stringify({ careerId: newCareerId || null }),
+      });
+      loadUsers();
+    } catch (err: any) {
+      alert('Error al cambiar carrera: ' + err.message);
+    }
+  };
+
   const handleDelete = async (id: number, name: string) => {
     if (!confirm(`¿Eliminar al usuario "${name}"? Esta acción no se puede deshacer.`)) return;
     try {
@@ -316,7 +328,20 @@ const AdminUsers = () => {
                     <td className="px-5 py-4 text-slate-600 dark:text-slate-300 text-sm">{u.email}</td>
                     <td className="px-5 py-4 text-slate-600 dark:text-slate-300 font-mono text-sm">{u.dni}</td>
                     <td className="px-5 py-4 text-slate-600 dark:text-slate-300 text-sm">
-                      {u.career?.name || <span className="italic text-slate-400 dark:text-slate-500">N/A</span>}
+                      {isAdmin || u.role === 'SECRETARIA' ? (
+                        <span className="italic text-slate-400 dark:text-slate-500">N/A</span>
+                      ) : (
+                        <select
+                          value={u.career?.id || ''}
+                          onChange={e => handleCareerChange(u.id, e.target.value)}
+                          className="text-xs bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-istpet-blue dark:focus:ring-istpet-gold transition-colors w-full min-w-[120px]"
+                        >
+                          <option value="">Sin carrera</option>
+                          {careers.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                     <td className="px-5 py-4">
                       <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg w-max border text-xs font-semibold ${
