@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/jwt';
+import prisma from '../prismaClient';
 
 export interface AuthRequest extends Request {
   user?: { id: number; role: string };
 }
 
-export const protect = (req: AuthRequest, res: Response, next: NextFunction): void => {
+export const protect = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   let token = req.headers.authorization;
   if (token && token.startsWith('Bearer ')) {
     token = token.split(' ')[1];
@@ -20,6 +21,15 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction): vo
 
   try {
     const decoded = verifyToken(token);
+    
+    if (decoded.sessionToken) {
+      const dbUser = await prisma.user.findUnique({ where: { id: decoded.id }, select: { sessionToken: true } });
+      if (!dbUser || dbUser.sessionToken !== decoded.sessionToken) {
+        res.status(401).json({ message: 'Sesión iniciada en otro dispositivo o token inválido.' });
+        return;
+      }
+    }
+
     req.user = { id: decoded.id, role: decoded.role };
     next();
   } catch (error) {

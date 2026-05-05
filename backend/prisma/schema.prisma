@@ -37,6 +37,8 @@ model User {
   resetToken       String?
   resetTokenExpiry DateTime?
 
+  sessionToken     String?
+
   registrations EventRegistration[]
   attendances   EventAttendance[]
   certificates  Certificate[]

@@ -239,8 +239,8 @@ const Dashboard = () => {
                 <BarChart3 className="text-istpet-blue dark:text-istpet-gold" size={18} />
                 Flujo de Alumnos por Evento
               </h3>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-64 w-full" style={{ minWidth: 0, minHeight: 0 }}>
+                <ResponsiveContainer width="99%" height="100%">
                   <BarChart data={eventsData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                     <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />

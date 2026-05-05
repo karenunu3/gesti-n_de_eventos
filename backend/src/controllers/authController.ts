@@ -21,6 +21,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    const sessionToken = crypto.randomUUID();
     const newUser = await prisma.user.create({
       data: {
         email,
@@ -29,11 +30,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         lastName,
         dni,
         role: role || 'ALUMNO',
-        careerId: careerId || null
+        careerId: careerId || null,
+        sessionToken
       }
     });
 
-    const token = generateToken(newUser.id, newUser.role);
+    const token = generateToken(newUser.id, newUser.role, sessionToken);
     res.status(201).json({ user: { id: newUser.id, email: newUser.email, role: newUser.role, firstName: newUser.firstName }, token });
   } catch (error: any) {
     res.status(500).json({ message: 'Error en el registro', error: error.message });
@@ -56,7 +58,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const token = generateToken(user.id, user.role);
+    const sessionToken = crypto.randomUUID();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { sessionToken }
+    });
+
+    const token = generateToken(user.id, user.role, sessionToken);
     res.status(200).json({ user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName }, token });
   } catch (error: any) {
     res.status(500).json({ message: 'Error en el login', error: error.message });
