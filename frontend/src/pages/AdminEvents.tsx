@@ -198,20 +198,20 @@ const AdminEvents = () => {
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-4">
-            <Link to="/dashboard" className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-istpet-blue dark:hover:text-istpet-gold transition-colors font-medium shadow-sm">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <Link to="/dashboard" className="flex items-center gap-2 px-4 py-2 shrink-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-istpet-blue dark:hover:text-istpet-gold transition-colors font-medium shadow-sm">
               <ArrowLeft size={18} /> Volver
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-50">
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-50">
                 {isTeacher ? 'Panel de Docente' : 'Administración de Eventos'}
               </h1>
               {isTeacher && <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Gestiona asistencias y proyecta QR para tus eventos</p>}
             </div>
           </div>
           {!showForm && !selectedEventId && !isTeacher && (
-            <button onClick={() => setShowForm(true)} className="bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 px-6 py-2.5 rounded-xl font-bold hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light transition-colors">
+            <button onClick={() => setShowForm(true)} className="bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 px-6 py-2.5 rounded-xl font-bold hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light transition-colors w-full md:w-auto text-center">
               Crear Nuevo Evento
             </button>
           )}
@@ -488,17 +488,17 @@ const AdminEvents = () => {
                     </span>
                   </div>
                 </div>
-                <div className="flex gap-2 flex-wrap justify-end flex-shrink-0">
+                <div className="grid grid-cols-2 sm:flex sm:gap-2 sm:flex-wrap sm:justify-end flex-shrink-0 w-full sm:w-auto gap-2 mt-4 sm:mt-0">
                   {!isTeacher && (
                     <>
-                      <button onClick={() => editEvent(event)} className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-sm">Editar</button>
-                      <button onClick={() => handleDelete(event.id)} className="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors text-sm">Eliminar</button>
+                      <button onClick={() => editEvent(event)} className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-sm flex items-center justify-center gap-2">Editar</button>
+                      <button onClick={() => handleDelete(event.id)} className="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors text-sm flex items-center justify-center gap-2">Eliminar</button>
                     </>
                   )}
-                  <button onClick={() => setShowQrModal(event.id)} className="px-5 py-2 bg-istpet-gold/20 dark:bg-istpet-gold/10 text-istpet-blue dark:text-istpet-gold font-medium rounded-xl hover:bg-istpet-gold/40 dark:hover:bg-istpet-gold/20 transition-colors flex items-center gap-2 text-sm">
+                  <button onClick={() => setShowQrModal(event.id)} className="px-5 py-2 bg-istpet-gold/20 dark:bg-istpet-gold/10 text-istpet-blue dark:text-istpet-gold font-medium rounded-xl hover:bg-istpet-gold/40 dark:hover:bg-istpet-gold/20 transition-colors flex items-center justify-center gap-2 text-sm">
                     <QrCode size={16} /> QR
                   </button>
-                  <button onClick={() => openAudit(event)} className="px-5 py-2 bg-istpet-blue/10 dark:bg-slate-700 text-istpet-blue dark:text-slate-300 font-medium rounded-xl hover:bg-istpet-blue/20 dark:hover:bg-slate-600 transition-colors flex items-center gap-2 text-sm">
+                  <button onClick={() => openAudit(event)} className="px-5 py-2 bg-istpet-blue/10 dark:bg-slate-700 text-istpet-blue dark:text-slate-300 font-medium rounded-xl hover:bg-istpet-blue/20 dark:hover:bg-slate-600 transition-colors flex items-center justify-center gap-2 text-sm">
                     <Users size={16} /> Asistencias
                   </button>
                 </div>
