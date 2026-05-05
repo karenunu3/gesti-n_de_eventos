@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchApi } from '../lib/api';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Users, GraduationCap, MapPin, Laptop, MonitorPlay, Building2, BookOpen } from 'lucide-react';
+import { ArrowLeft, GraduationCap, MapPin, Laptop, MonitorPlay, Building2, BookOpen } from 'lucide-react';
 
 const MODALITIES = [
   {
