@@ -120,7 +120,9 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     await sendMail(user.email, 'Recuperación de Contraseña - ISTPET', message);
     res.status(200).json({ message: 'Correo enviado. Revisa tu bandeja de entrada.' });
   } catch (error: any) {
-    res.status(500).json({ message: 'Error al procesar recuperación', error: error.message });
+    console.error('❌ forgotPassword error:', error);
+    const detail = error.message || 'Error desconocido';
+    res.status(500).json({ message: `Error al enviar correo: ${detail}` });
   }
 };
 
