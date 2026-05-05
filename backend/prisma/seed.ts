@@ -31,12 +31,13 @@ async function main() {
   await prisma.eventRegistration.deleteMany();
   await prisma.event.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.career.deleteMany();
 
   console.log('📚 Creando carreras...');
   const careersData = [
-    'Desarrollo de Software', 'Diseño Gráfico', 'Entrenamiento Deportivo', 'Educación Inicial', 'Mecánica Automotriz',
+    'Desarrollo de Software (Presencial)', 'Diseño Gráfico', 'Entrenamiento Deportivo', 'Educación Inicial', 'Mecánica Automotriz',
     'Educación Básica', 'Electrónica', 'Gastronomía', 'Redes y Telecomunicaciones',
-    'Contabilidad y Asesoría Tributaria', 'Educación Inclusiva', 'Marketing y Comercio Electrónico', 'Talento Humano'
+    'Desarrollo de Software (En Línea)', 'Contabilidad y Asesoría Tributaria', 'Educación Inclusiva', 'Marketing y Comercio Electrónico', 'Talento Humano'
   ];
   const careers = await Promise.all(
     careersData.map(name => prisma.career.upsert({
