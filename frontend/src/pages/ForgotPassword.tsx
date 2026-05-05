@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
 import { ArrowLeft, Mail, Send } from 'lucide-react';
@@ -6,17 +6,29 @@ import { ArrowLeft, Mail, Send } from 'lucide-react';
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState({ loading: false, error: '', success: '' });
+  const [cooldown, setCooldown] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval>;
+    if (cooldown > 0) {
+      timer = setInterval(() => setCooldown(c => c - 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (cooldown > 0) return;
+    
     setStatus({ loading: true, error: '', success: '' });
     try {
       await fetchApi('/auth/forgot-password', {
         method: 'POST',
         body: JSON.stringify({ email })
       });
-      setStatus({ loading: false, error: '', success: 'Si el correo existe, te hemos enviado un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada.' });
+      setStatus({ loading: false, error: '', success: '¡Enlace enviado! Revisa tu bandeja de entrada.' });
+      setCooldown(60);
     } catch (error: any) {
       setStatus({ loading: false, error: error.message, success: '' });
     }
@@ -34,7 +46,7 @@ const ForgotPassword = () => {
         </div>
 
         {status.error && <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-3 rounded-xl mb-4 text-sm">{status.error}</div>}
-        {status.success && <div className="bg-istpet-gold/10 border border-istpet-gold/50 text-istpet-gold p-3 rounded-xl mb-4 text-sm">{status.success}</div>}
+        {status.success && <div className="bg-istpet-gold/10 border border-istpet-gold/50 text-istpet-gold p-3 rounded-xl mb-4 text-sm font-medium">{status.success}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
@@ -56,10 +68,10 @@ const ForgotPassword = () => {
           
           <button 
             type="submit" 
-            disabled={status.loading}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-istpet-gold text-istpet-blue font-bold shadow-[0_0_15px_rgba(202,171,94,0.3)] hover:shadow-[0_0_25px_rgba(202,171,94,0.5)] transition-all hover:-translate-y-1 active:translate-y-0 disabled:opacity-50"
+            disabled={status.loading || cooldown > 0}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-istpet-gold text-istpet-blue font-bold shadow-[0_0_15px_rgba(202,171,94,0.3)] hover:shadow-[0_0_25px_rgba(202,171,94,0.5)] transition-all hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-none disabled:cursor-not-allowed"
           >
-            {status.loading ? 'Enviando...' : <><Send size={18} /> Enviar Enlace</>}
+            {status.loading ? 'Enviando...' : cooldown > 0 ? `Reenviar en ${cooldown}s` : <><Send size={18} /> Enviar Enlace</>}
           </button>
         </form>
       </div>

@@ -95,7 +95,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     const user = await prisma.user.findUnique({ where: { email } });
     
     if (!user) {
-      res.status(404).json({ message: 'Usuario no encontrado' });
+      res.status(404).json({ message: 'El correo ingresado no está registrado en el sistema.' });
       return;
     }
 
