@@ -197,7 +197,13 @@ const Events = () => {
     const endDate = new Date(event.endDate);
     const startDate = new Date(event.startDate);
 
-    if (searchText && !event.title.toLowerCase().includes(searchText.toLowerCase()) && !event.description?.toLowerCase().includes(searchText.toLowerCase())) return false;
+    if (searchText) {
+      const searchWords = searchText.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+      const titleLower = event.title.toLowerCase();
+      const descLower = event.description?.toLowerCase() || '';
+      const matchesAllWords = searchWords.every(word => titleLower.includes(word) || descLower.includes(word));
+      if (!matchesAllWords) return false;
+    }
 
     if (filterType === 'TRANSVERSAL' && !event.isTransversal) return false;
     if (filterType === 'SPECIFIC' && event.isTransversal) return false;

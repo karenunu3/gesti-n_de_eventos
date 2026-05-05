@@ -24,6 +24,7 @@ const Dashboard = () => {
   const [docenteReport, setDocenteReport] = useState<any>(null);
   const [certMessage, setCertMessage] = useState<{text: string, type: 'error'|'success'|'info'} | null>(null);
   const [eventsData, setEventsData] = useState<any[]>([]);
+  const [rawEvents, setRawEvents] = useState<any[]>([]);
   const [eventStats, setEventStats] = useState({ total: 0, totalRegistrations: 0, totalAttendances: 0 });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -77,6 +78,7 @@ const Dashboard = () => {
     try {
       // Obtener eventos del mes actual para el dashboard
       const data = await fetchApi('/events/current-month');
+      setRawEvents(data);
       setEventsData(data.map((e: any) => ({
         name: e.title.length > 14 ? e.title.substring(0, 14) + '…' : e.title,
         Inscritos: e._count?.registrations || 0,
@@ -217,43 +219,110 @@ const Dashboard = () => {
       {isAdminUser && (
         <div className="space-y-6 fade-in">
           {/* Quick stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {[
-              { label: 'Total Eventos', value: eventStats.total, icon: <Calendar size={14} /> },
-              { label: 'Inscripciones totales', value: eventStats.totalRegistrations, icon: <Users size={14} /> },
-              { label: 'Asistencias registradas', value: eventStats.totalAttendances, icon: <CheckCircle size={14} /> },
+              { label: 'Total Eventos', value: eventStats.total, icon: <Calendar size={20} />, color: 'from-blue-500 to-indigo-600' },
+              { label: 'Inscripciones totales', value: eventStats.totalRegistrations, icon: <Users size={20} />, color: 'from-amber-400 to-orange-500' },
+              { label: 'Asistencias', value: eventStats.totalAttendances, icon: <CheckCircle size={20} />, color: 'from-emerald-400 to-teal-500' },
             ].map(stat => (
-              <div key={stat.label} className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                <p className="text-xs uppercase font-semibold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
-                  {stat.icon} {stat.label}
-                </p>
-                <p className="text-4xl font-extrabold text-istpet-blue dark:text-istpet-gold">{stat.value}</p>
+              <div key={stat.label} className="relative overflow-hidden bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg transition-all group">
+                <div className={`absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br ${stat.color} rounded-full opacity-10 group-hover:scale-150 transition-transform duration-500`} />
+                <div className="flex justify-between items-start mb-4 relative z-10">
+                  <div className={`p-3 rounded-2xl bg-gradient-to-br ${stat.color} text-white shadow-md`}>
+                    {stat.icon}
+                  </div>
+                </div>
+                <p className="text-4xl font-black text-slate-800 dark:text-white mb-1 relative z-10">{stat.value}</p>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 relative z-10">{stat.label}</p>
               </div>
             ))}
           </div>
 
-          {/* Chart */}
-          {eventsData.length > 0 && (
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700">
-              <h3 className="text-base font-bold text-slate-700 dark:text-slate-200 mb-6 flex items-center gap-2">
-                <BarChart3 className="text-istpet-blue dark:text-istpet-gold" size={18} />
-                Flujo de Alumnos por Evento
-              </h3>
-              <div className="h-64 w-full" style={{ minWidth: 0, minHeight: 0 }}>
-                <ResponsiveContainer width="99%" height="100%">
-                  <BarChart data={eventsData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0/0.1)' }} isAnimationActive={false} />
-                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '12px', fontSize: '12px' }} />
-                    <Bar dataKey="Inscritos" fill="#BCA75B" radius={[4, 4, 0, 0]} barSize={26} isAnimationActive={false} />
-                    <Bar dataKey="Asistencias" fill="#1F295B" radius={[4, 4, 0, 0]} barSize={26} isAnimationActive={false} />
-                  </BarChart>
-                </ResponsiveContainer>
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Chart */}
+            <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col min-h-[350px]">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-50 flex items-center gap-2">
+                  <BarChart3 className="text-istpet-blue dark:text-istpet-gold" size={20} />
+                  Flujo de Alumnos por Evento
+                </h3>
+              </div>
+              
+              {eventsData.length > 0 ? (
+                <div className="flex-1 w-full" style={{ minWidth: 0, minHeight: 0 }}>
+                  <ResponsiveContainer width="99%" height="100%">
+                    <BarChart data={eventsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
+                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b', fontWeight: 500 }} axisLine={false} tickLine={false} dy={10} />
+                      <YAxis tick={{ fontSize: 12, fill: '#64748b', fontWeight: 500 }} axisLine={false} tickLine={false} />
+                      <Tooltip 
+                        cursor={{ fill: 'rgba(226, 232, 240, 0.4)' }} 
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0/0.1), 0 4px 6px -4px rgb(0 0 0/0.1)', padding: '12px 16px', fontWeight: 600 }} 
+                        isAnimationActive={false} 
+                      />
+                      <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '13px', fontWeight: 500 }} />
+                      <Bar dataKey="Inscritos" fill="#BCA75B" radius={[6, 6, 0, 0]} barSize={32} isAnimationActive={false} />
+                      <Bar dataKey="Asistencias" fill="#1F295B" radius={[6, 6, 0, 0]} barSize={32} isAnimationActive={false} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+                  <BarChart3 size={48} className="opacity-20 mb-4" />
+                  <p>No hay eventos este mes para mostrar gráficas.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Próximos Eventos */}
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col min-h-[350px]">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-50 flex items-center gap-2">
+                  <Calendar className="text-istpet-blue dark:text-istpet-gold" size={20} />
+                  Eventos del Mes
+                </h3>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+                {rawEvents.length > 0 ? (
+                  rawEvents.slice(0, 5).map(event => {
+                    const isPast = new Date(event.endDate) < new Date();
+                    return (
+                      <div key={event.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600 hover:border-istpet-blue/30 dark:hover:border-istpet-gold/30 transition-colors">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 line-clamp-1" title={event.title}>{event.title}</h4>
+                          {isPast ? (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 font-bold ml-2 shrink-0">Pasado</span>
+                          ) : (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-bold ml-2 shrink-0">Activo</span>
+                          )}
+                        </div>
+                        <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                          <span className="flex items-center gap-1">
+                            <Users size={12} /> {event._count?.registrations || 0} inscritos
+                          </span>
+                          <span>
+                            {new Date(event.startDate).toLocaleDateString('es-EC', { day: 'numeric', month: 'short' })}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-center pb-8">
+                    <Calendar size={40} className="opacity-20 mb-3" />
+                    <p className="text-sm">No hay eventos registrados en este mes.</p>
+                  </div>
+                )}
+                {rawEvents.length > 5 && (
+                  <button onClick={() => navigate('/events')} className="w-full text-center text-sm font-semibold text-istpet-blue dark:text-istpet-gold hover:underline pt-2">
+                    Ver todos los eventos
+                  </button>
+                )}
               </div>
             </div>
-          )}
+          </div>
 
           {/* Punto 6: Historial personal del docente */}
           {user.role === 'DOCENTE' && certMessage && (
