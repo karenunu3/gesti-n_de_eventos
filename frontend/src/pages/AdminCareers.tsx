@@ -87,8 +87,8 @@ const AdminCareers = () => {
               <div className="flex-1 p-6 space-y-4">
                 {mod.careers.map(careerName => {
                   const dbCareer = careers.find(c => c.name === careerName);
-                  const studentsCount = dbCareer ? users.filter(u => u.role === 'ALUMNO' && u.careerId === dbCareer.id).length : 0;
-                  const teachers = dbCareer ? users.filter(u => u.role === 'DOCENTE' && u.careerId === dbCareer.id) : [];
+                  const studentsCount = dbCareer ? users.filter(u => u.role === 'ALUMNO' && u.career?.id === dbCareer.id).length : 0;
+                  const teachers = dbCareer ? users.filter(u => u.role === 'DOCENTE' && u.career?.id === dbCareer.id) : [];
 
                   return (
                     <div key={careerName} className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-200 dark:border-slate-600 hover:border-istpet-blue/30 dark:hover:border-istpet-gold/30 transition-colors">
