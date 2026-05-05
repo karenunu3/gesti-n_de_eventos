@@ -250,8 +250,8 @@ const Dashboard = () => {
               </div>
               
               {eventsData.length > 0 ? (
-                <div className="flex-1 w-full" style={{ minWidth: 0, minHeight: 0 }}>
-                  <ResponsiveContainer width="99%" height="100%">
+                <div className="w-full mt-4" style={{ minWidth: 0 }}>
+                  <ResponsiveContainer width="100%" height={280}>
                     <BarChart data={eventsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
                       <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b', fontWeight: 500 }} axisLine={false} tickLine={false} dy={10} />
