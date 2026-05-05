@@ -194,7 +194,7 @@ const AdminEvents = () => {
     ));
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-8 w-full transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-8 w-full transition-colors duration-300" translate="no">
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
@@ -263,7 +263,7 @@ const AdminEvents = () => {
                   </div>
                   <input type="checkbox" className="sr-only" checked={formData.isTransversal} onChange={e => setFormData({...formData, isTransversal: e.target.checked, careers: []})} />
                   <div>
-                    <div className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-100"><Layers size={16} className="text-istpet-gold" /> Evento Transversal — Todas las carreras</div>
+                    <div className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-100"><Layers size={16} className="text-istpet-gold" /> Evento General — Todas las carreras</div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Todos los alumnos pueden inscribirse, sin importar su carrera.</p>
                   </div>
                 </label>
@@ -468,7 +468,7 @@ const AdminEvents = () => {
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <h3 className="text-lg font-bold text-slate-800 dark:text-slate-50">{event.title}</h3>
                     {event.isTransversal
-                      ? <span className="text-xs px-2 py-0.5 rounded-full bg-istpet-gold/20 text-istpet-blue dark:text-istpet-gold font-semibold flex items-center gap-1"><Layers size={11} /> Transversal</span>
+                      ? <span className="text-xs px-2 py-0.5 rounded-full bg-istpet-gold/20 text-istpet-blue dark:text-istpet-gold font-semibold flex items-center gap-1"><Layers size={11} /> General</span>
                       : <span className="text-xs px-2 py-0.5 rounded-full bg-istpet-blue/10 dark:bg-slate-700 text-istpet-blue dark:text-slate-300 font-semibold flex items-center gap-1"><GraduationCap size={11} /> Específico</span>
                     }
                   </div>

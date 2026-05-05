@@ -98,8 +98,16 @@ const Dashboard = () => {
     setCertMessage(null);
     try {
       const data = await fetchApi(`/reports/certificate/${eventId}`, { method: 'POST' });
-      if (data.pdfUrl) window.open(`${API_URL.replace('/api', '')}${data.pdfUrl}`, '_blank');
-      setCertMessage({ text: '¡Certificado generado! Se abrió en una nueva pestaña.', type: 'success' });
+      if (data.pdfUrl) {
+        const link = document.createElement('a');
+        link.href = `${API_URL.replace('/api', '')}${data.pdfUrl}`;
+        link.target = '_blank';
+        link.download = `Certificado_${eventId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      setCertMessage({ text: '¡Certificado generado y descargado!', type: 'success' });
     } catch (error: any) {
       if (error.message === 'SURVEY_REQUIRED') {
         setCertMessage({ text: 'Debes completar la encuesta de satisfacción antes de descargar el certificado. Ve a la sección Eventos para hacerlo.', type: 'info' });
@@ -122,7 +130,7 @@ const Dashboard = () => {
   const isAdminUser = ['ADMIN', 'SECRETARIA', 'DOCENTE'].includes(user.role);
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto w-full fade-in">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto w-full fade-in" translate="no">
       {/* Page header */}
       <div className="mb-8">
         <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-50">
@@ -250,8 +258,8 @@ const Dashboard = () => {
               </div>
               
               {eventsData.length > 0 ? (
-                <div className="w-full mt-4" style={{ minWidth: 0 }}>
-                  <ResponsiveContainer width="100%" height={280}>
+                <div className="w-full mt-4" style={{ minWidth: '1px', minHeight: '280px' }}>
+                  <ResponsiveContainer width="100%" height={280} minWidth={1} minHeight={1}>
                     <BarChart data={eventsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
                       <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b', fontWeight: 500 }} axisLine={false} tickLine={false} dy={10} />
@@ -297,6 +305,12 @@ const Dashboard = () => {
                           ) : (
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-bold ml-2 shrink-0">Activo</span>
                           )}
+                        </div>
+                        <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-2">
+                          {event.isTransversal
+                            ? <span className="text-xs px-2 py-0.5 rounded-full bg-istpet-gold/20 text-istpet-blue dark:text-istpet-gold font-semibold flex items-center gap-1"><Layers size={11} /> General</span>
+                            : <span className="text-xs px-2 py-0.5 rounded-full bg-istpet-blue/10 dark:bg-slate-700 text-istpet-blue dark:text-slate-300 font-semibold flex items-center gap-1"><GraduationCap size={11} /> Específico</span>
+                          }
                         </div>
                         <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                           <span className="flex items-center gap-1">

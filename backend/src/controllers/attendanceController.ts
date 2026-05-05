@@ -39,23 +39,6 @@ export const markAttendance = async (req: any, res: Response): Promise<void> => 
       return;
     }
 
-    if (!qrToken) {
-      res.status(400).json({ message: 'Se requiere escanear el Código QR proyectado por el Docente' });
-      return;
-    }
-
-    // Validar el Token QR
-    try {
-      const decoded: any = jwt.verify(qrToken, process.env.JWT_SECRET || 'secret_fallback');
-      if (decoded.eventId !== eventId || decoded.type !== 'attendance_qr') {
-        res.status(400).json({ message: 'El código QR no corresponde a este evento' });
-        return;
-      }
-    } catch (err) {
-      res.status(400).json({ message: 'El código QR es inválido o ha expirado. Pide al docente que proyecte uno nuevo.' });
-      return;
-    }
-
     const event = await prisma.event.findUnique({ where: { id: eventId } });
     if (!event) {
       res.status(404).json({ message: 'Evento no encontrado' });
@@ -72,10 +55,17 @@ export const markAttendance = async (req: any, res: Response): Promise<void> => 
       return;
     }
 
-    // Verificar si ya registró asistencia
+    // Verificar si ya registró asistencia (para saber si es check-in o check-out)
     const existingAttendance = await prisma.eventAttendance.findUnique({
       where: { eventId_userId: { eventId, userId } }
     });
+
+    const now = new Date();
+    const eventStart = new Date(event.startDate);
+    const eventEnd = new Date(event.endDate);
+
+    const checkInDeadline = new Date(eventStart.getTime() + 10 * 60000);
+    const checkOutDeadline = new Date(eventEnd.getTime() + 10 * 60000);
 
     // Lógica Antifraude: Distancia
     let isLocationValid = true;
@@ -87,9 +77,15 @@ export const markAttendance = async (req: any, res: Response): Promise<void> => 
     }
 
     if (existingAttendance) {
-      // CHECK-OUT
+      // === LÓGICA DE CHECK-OUT ===
       if (existingAttendance.checkOutAt) {
         res.status(400).json({ message: 'Ya registraste tu salida para este evento' });
+        return;
+      }
+
+      // Validar tiempo de check-out (exactamente al terminar el evento hasta 10 min después)
+      if (now < eventEnd || now > checkOutDeadline) {
+        res.status(400).json({ message: 'El registro de salida solo está habilitado durante los 10 minutos posteriores a la finalización del evento.' });
         return;
       }
       
@@ -106,7 +102,30 @@ export const markAttendance = async (req: any, res: Response): Promise<void> => 
       return;
     }
 
-    // CHECK-IN
+    // === LÓGICA DE CHECK-IN ===
+    if (!qrToken) {
+      res.status(400).json({ message: 'Se requiere escanear el Código QR proyectado por el Docente para la entrada' });
+      return;
+    }
+
+    // Validar el Token QR para entrada
+    try {
+      const decoded: any = jwt.verify(qrToken, process.env.JWT_SECRET || 'secret_fallback');
+      if (decoded.eventId !== eventId || decoded.type !== 'attendance_qr') {
+        res.status(400).json({ message: 'El código QR no corresponde a este evento' });
+        return;
+      }
+    } catch (err) {
+      res.status(400).json({ message: 'El código QR es inválido o ha expirado. Pide al docente que proyecte uno nuevo.' });
+      return;
+    }
+
+    // Validar tiempo de check-in (exactamente al inicio del evento hasta 10 min después)
+    if (now < eventStart || now > checkInDeadline) {
+      res.status(400).json({ message: 'El registro de entrada solo está habilitado durante los primeros 10 minutos de inicio del evento.' });
+      return;
+    }
+
     const attendance = await prisma.eventAttendance.create({
       data: {
         eventId,

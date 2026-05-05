@@ -33,6 +33,7 @@ model User {
   
   careerId  Int?
   career    Career?  @relation(fields: [careerId], references: [id])
+  semester  Int?
 
   resetToken       String?
   resetTokenExpiry DateTime?

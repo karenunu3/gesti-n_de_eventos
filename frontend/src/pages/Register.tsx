@@ -54,6 +54,7 @@ const Register = () => {
     ci: '',
     role: 'ALUMNO',
     careerId: '',
+    semester: '',
     password: '',
     confirmPassword: '',
   });
@@ -119,6 +120,7 @@ const Register = () => {
           password: form.password,
           role: form.role,
           careerId: form.careerId ? parseInt(form.careerId) : null,
+          semester: form.semester ? parseInt(form.semester) : null,
         }),
       });
 
@@ -247,21 +249,43 @@ const Register = () => {
                 {docError && <p className="text-red-400 text-xs mt-1">{docError}</p>}
               </div>
 
-              {/* Carrera (Opcional) */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Carrera</label>
-                <div className="relative">
-                  <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                  <select
-                    className={`${inputClass} appearance-none`}
-                    value={form.careerId}
-                    onChange={e => set('careerId', e.target.value)}
-                  >
-                    <option value="">Sin carrera asignada</option>
-                    {careers.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+              {/* Carrera y Semestre */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Carrera</label>
+                  <div className="relative">
+                    <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                    <select
+                      className={`${inputClass} appearance-none`}
+                      value={form.careerId}
+                      onChange={e => set('careerId', e.target.value)}
+                      required
+                    >
+                      <option value="">Selecciona carrera</option>
+                      {careers.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Semestre</label>
+                  <div className="relative">
+                    <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                    <select
+                      className={`${inputClass} appearance-none`}
+                      value={form.semester}
+                      onChange={e => set('semester', e.target.value)}
+                      required
+                    >
+                      <option value="">Nivel</option>
+                      <option value="1">1er Semestre</option>
+                      <option value="2">2do Semestre</option>
+                      <option value="3">3er Semestre</option>
+                      <option value="4">4to Semestre</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 

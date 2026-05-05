@@ -123,6 +123,20 @@ const Events = () => {
     }
   };
 
+  const startCheckOut = async (eventId: number) => {
+    setMessage(null);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          submitAttendance(eventId, pos.coords.latitude, pos.coords.longitude, '');
+        },
+        () => setMessage({ text: 'Error obteniendo ubicación. Necesario para registrar salida.', type: 'error' })
+      );
+    } else {
+      setMessage({ text: 'Tu navegador no soporta geolocalización', type: 'error' });
+    }
+  };
+
   const cancelAttendance = () => {
     if (scannerRef.current) {
       scannerRef.current.stop().catch(console.error);
@@ -161,7 +175,15 @@ const Events = () => {
   const handleCertificate = async (eventId: number) => {
     try {
       const res = await fetchApi(`/reports/certificate/${eventId}`, { method: 'POST' });
-      window.open(`${API_URL.replace('/api', '')}${res.pdfUrl}`, '_blank');
+      if (res.pdfUrl) {
+        const link = document.createElement('a');
+        link.href = `${API_URL.replace('/api', '')}${res.pdfUrl}`;
+        link.target = '_blank';
+        link.download = `Certificado_${eventId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     } catch (err: any) {
       if (err.message === 'SURVEY_REQUIRED') {
         setShowSurvey(eventId);
@@ -231,7 +253,7 @@ const Events = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
-      <div className="p-6 max-w-7xl mx-auto fade-in">
+      <div className="p-6 max-w-7xl mx-auto fade-in" translate="no">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-4">
@@ -296,7 +318,7 @@ const Events = () => {
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${filterType === v ? 'bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
                     {v === 'TRANSVERSAL' && <Layers size={11} />}
                     {v === 'SPECIFIC' && <GraduationCap size={11} />}
-                    {v === 'ALL' ? 'Todos los tipos' : v === 'TRANSVERSAL' ? 'Transversal' : 'Por carrera'}
+                    {v === 'ALL' ? 'Todos los tipos' : v === 'TRANSVERSAL' ? 'General' : 'Por carrera'}
                   </button>
                 ))}
 
@@ -467,7 +489,7 @@ const Events = () => {
                     )}
                     {event.isTransversal ? (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-istpet-gold/80 text-istpet-blue font-semibold flex items-center gap-1">
-                        <Layers size={10} /> Transversal
+                        <Layers size={10} /> General
                       </span>
                     ) : (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-white/20 text-white font-semibold flex items-center gap-1">
@@ -525,9 +547,9 @@ const Events = () => {
                               }
                             } else if (hasAttendance) {
                               return (
-                                <button onClick={() => startAttendance(event.id)}
+                                <button onClick={() => startCheckOut(event.id)}
                                   className="w-full py-3 px-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-all shadow-lg bg-red-500 hover:bg-red-600 text-white shadow-red-500/20">
-                                  <QrCode size={18} /> {t('events.register_out')}
+                                  <MapPin size={18} /> Registrar Salida
                                 </button>
                               );
                             } else {

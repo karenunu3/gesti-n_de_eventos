@@ -7,7 +7,7 @@ import { sendMail } from '../utils/mailer';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, firstName, lastName, dni, role, careerId } = req.body;
+    const { email, password, firstName, lastName, dni, role, careerId, semester } = req.body;
 
     const existingUser = await prisma.user.findFirst({
       where: { OR: [{ email }, { dni }] }
@@ -31,6 +31,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         dni,
         role: role || 'ALUMNO',
         careerId: careerId || null,
+        semester: semester || null,
         sessionToken
       }
     });
