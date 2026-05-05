@@ -80,7 +80,10 @@ const Login = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Contraseña</label>
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium text-slate-300">Contraseña</label>
+                  <Link to="/forgot-password" className="text-xs text-istpet-gold hover:underline font-medium">¿Olvidaste tu contraseña?</Link>
+                </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <KeySquare className="h-5 w-5 text-slate-400" />

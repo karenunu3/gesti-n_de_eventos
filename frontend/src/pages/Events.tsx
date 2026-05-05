@@ -282,26 +282,29 @@ const Events = () => {
 
             <div className="w-px bg-slate-200 dark:bg-slate-600 self-stretch" />
 
-            {/* Tipo */}
-            {(['ALL', 'TRANSVERSAL', 'SPECIFIC'] as const).map(v => (
-              <button key={v} onClick={() => setFilterType(v)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${filterType === v ? 'bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
-                {v === 'TRANSVERSAL' && <Layers size={11} />}
-                {v === 'SPECIFIC' && <GraduationCap size={11} />}
-                {v === 'ALL' ? 'Todos los tipos' : v === 'TRANSVERSAL' ? 'Transversal' : 'Por carrera'}
-              </button>
-            ))}
+            {/* Tipo y Carrera (Solo para ADMIN y SECRETARIA) */}
+            {user && ['ADMIN', 'SECRETARIA'].includes(user.role) && (
+              <>
+                {(['ALL', 'TRANSVERSAL', 'SPECIFIC'] as const).map(v => (
+                  <button key={v} onClick={() => setFilterType(v)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${filterType === v ? 'bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
+                    {v === 'TRANSVERSAL' && <Layers size={11} />}
+                    {v === 'SPECIFIC' && <GraduationCap size={11} />}
+                    {v === 'ALL' ? 'Todos los tipos' : v === 'TRANSVERSAL' ? 'Transversal' : 'Por carrera'}
+                  </button>
+                ))}
 
-            {/* Carrera */}
-            {careers.length > 0 && (
-              <select
-                value={filterCareer}
-                onChange={e => setFilterCareer(e.target.value)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-none outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold transition-colors"
-              >
-                <option value="ALL">Todas las carreras</option>
-                {careers.map(c => <option key={c.id} value={c.id.toString()}>{c.name}</option>)}
-              </select>
+                {careers.length > 0 && (
+                  <select
+                    value={filterCareer}
+                    onChange={e => setFilterCareer(e.target.value)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-none outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold transition-colors"
+                  >
+                    <option value="ALL">Todas las carreras</option>
+                    {careers.map(c => <option key={c.id} value={c.id.toString()}>{c.name}</option>)}
+                  </select>
+                )}
+              </>
             )}
 
             {/* Estado inscripción (solo ALUMNO) */}
