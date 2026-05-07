@@ -73,7 +73,7 @@ const Login = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-white placeholder-slate-500"
-                    placeholder="alumno@istpet.edu.ec"
+                    placeholder="usuario@gmail.com"
                     required
                   />
                 </div>

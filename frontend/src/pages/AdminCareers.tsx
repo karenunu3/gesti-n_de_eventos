@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../lib/api';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, GraduationCap, MapPin, Laptop, MonitorPlay, Building2, BookOpen, Settings, X, Plus, Trash2, UserPlus, CreditCard, KeySquare, User, Mail, Eye, EyeOff, Check } from 'lucide-react';
-import { validateDocument, getPasswordStrength } from '../lib/validators';
+import { validateDocument, validateEmail, getPasswordStrength } from '../lib/validators';
 import type { PasswordStrength } from '../lib/validators';
 import { MODALITIES, userInModality } from '../lib/modalities';
 import type { ModalityId } from '../lib/modalities';
@@ -52,6 +52,8 @@ const MODALITY_ICONS: Record<ModalityId, React.ReactNode> = {
 };
 
 const AdminCareers = () => {
+  const navigate = useNavigate();
+  const goBack = () => { if (window.history.length > 1) navigate(-1); else navigate('/dashboard'); };
   const [careers, setCareers] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,6 +151,8 @@ const AdminCareers = () => {
 
     const docErr = validateDocument(form.docType, form.ci);
     if (docErr) { setFormError(docErr); return; }
+    const emailErr = validateEmail(form.email);
+    if (emailErr) { setFormError(emailErr); return; }
     if (strength.score < 3) { setFormError('La contraseña debe ser al menos Fuerte.'); return; }
     if (form.password !== form.confirmPassword) { setFormError('Las contraseñas no coinciden.'); return; }
 
@@ -212,13 +216,13 @@ const AdminCareers = () => {
       <div className="max-w-7xl mx-auto w-full">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Link
-            to="/dashboard"
+          <button
+            onClick={goBack}
             className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-istpet-blue dark:hover:text-istpet-gold transition-colors font-medium shadow-sm"
           >
             <ArrowLeft size={18} />
             Volver
-          </Link>
+          </button>
           <div>
             <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-50">Gestión de Carreras</h1>
             <p className="text-slate-500 dark:text-slate-400 mt-1">Administra el alumnado y personal de cada modalidad.</p>
@@ -416,7 +420,7 @@ const AdminCareers = () => {
                         <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Correo *</label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                          <input required type="email" className={`${inputClass} pl-9`} placeholder="correo@istpet.edu.ec" value={form.email} onChange={e => setF('email', e.target.value)} />
+                          <input required type="email" className={`${inputClass} pl-9`} placeholder="correo@gmail.com" value={form.email} onChange={e => setF('email', e.target.value)} />
                         </div>
                       </div>
 

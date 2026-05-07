@@ -28,6 +28,16 @@ export function validateDocument(type: 'CI' | 'PASAPORTE', value: string): strin
   return type === 'CI' ? validateCI(value) : validatePassport(value);
 }
 
+// Email validation: formato estándar RFC 5322 simplificado, dominio con TLD de 2+ chars
+const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
+export function validateEmail(email: string): string | null {
+  if (!email) return 'El correo es obligatorio.';
+  if (email.length > 254) return 'El correo es demasiado largo.';
+  if (!EMAIL_RE.test(email)) return 'Formato de correo inválido (ej. usuario@gmail.com).';
+  return null;
+}
+
 export interface PasswordStrength {
   score: 0 | 1 | 2 | 3 | 4;
   label: string;

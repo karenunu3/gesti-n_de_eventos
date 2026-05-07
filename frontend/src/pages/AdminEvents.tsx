@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi, API_URL } from '../lib/api';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Users, FileSpreadsheet, MapPin, CheckCircle, XCircle,
   Map, QrCode, Layers, GraduationCap, Star, MessageSquare, X,
@@ -13,6 +13,8 @@ const ISTPET_LAT = -0.2824216;
 const ISTPET_LNG = -78.5555266;
 
 const AdminEvents = () => {
+  const navigate = useNavigate();
+  const goBack = () => { if (window.history.length > 1) navigate(-1); else navigate('/dashboard'); };
   const [events, setEvents] = useState<any[]>([]);
   const [careers, setCareers] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -26,9 +28,10 @@ const AdminEvents = () => {
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [selectedEventTitle, setSelectedEventTitle] = useState<string>('');
   const [attendances, setAttendances] = useState<any[]>([]);
+  const [registrations, setRegistrations] = useState<any[]>([]);
   const [surveys, setSurveys] = useState<any[]>([]);
   const [avgRating, setAvgRating] = useState<number>(0);
-  const [auditTab, setAuditTab] = useState<'attendance' | 'surveys'>('attendance');
+  const [auditTab, setAuditTab] = useState<'registrations' | 'attendance' | 'surveys'>('registrations');
 
   // Filtros estilo Eventos Institucionales
   const [searchText, setSearchText] = useState('');
@@ -155,14 +158,29 @@ const AdminEvents = () => {
   const openAudit = async (event: any) => {
     setSelectedEventId(event.id);
     setSelectedEventTitle(event.title);
-    setAuditTab('attendance');
-    await Promise.all([loadAttendances(event.id), loadSurveys(event.id)]);
+    setAuditTab('registrations');
+    await Promise.all([loadRegistrations(event.id), loadAttendances(event.id), loadSurveys(event.id)]);
+  };
+
+  const loadRegistrations = async (eventId: number) => {
+    try {
+      const data = await fetchApi(`/events/${eventId}`);
+      setRegistrations(data?.registrations || []);
+    } catch (err: any) { console.error(err); }
   };
 
   const loadAttendances = async (eventId: number) => {
     try {
       const data = await fetchApi(`/attendance/event/${eventId}`);
       setAttendances(data);
+    } catch (err: any) { alert(err.message); }
+  };
+
+  const removeRegistration = async (regId: number, name: string) => {
+    if (!confirm(`¿Eliminar la inscripción de "${name}"?`)) return;
+    try {
+      await fetchApi(`/events/registration/${regId}`, { method: 'DELETE' });
+      if (selectedEventId) loadRegistrations(selectedEventId);
     } catch (err: any) { alert(err.message); }
   };
 
@@ -212,9 +230,9 @@ const AdminEvents = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-4">
-            <Link to="/dashboard" className="hidden md:flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-istpet-blue dark:hover:text-istpet-gold transition-colors font-medium shadow-sm">
+            <button onClick={goBack} className="hidden md:flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-istpet-blue dark:hover:text-istpet-gold transition-colors font-medium shadow-sm">
               <ArrowLeft size={18} /> Volver
-            </Link>
+            </button>
             <div>
               <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-50">
                 {isTeacher ? 'Panel de Docente' : 'Administración de Eventos'}
@@ -464,7 +482,7 @@ const AdminEvents = () => {
                     {selectedEventTitle}
                   </h2>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                    {attendances.length} asistencias · {surveys.length} encuestas
+                    {registrations.length} inscritos · {attendances.length} asistencias · {surveys.length} encuestas
                     {surveys.length > 0 && <span className="ml-1">· Promedio: <span className="font-semibold text-istpet-gold">{avgRating} ★</span></span>}
                   </p>
                 </div>
@@ -480,7 +498,14 @@ const AdminEvents = () => {
                 </div>
               </div>
 
-              <div className="flex gap-1 mt-4 bg-slate-100 dark:bg-slate-700 p-1 rounded-xl w-fit">
+              <div className="flex gap-1 mt-4 bg-slate-100 dark:bg-slate-700 p-1 rounded-xl w-fit flex-wrap">
+                <button
+                  onClick={() => setAuditTab('registrations')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${auditTab === 'registrations' ? 'bg-white dark:bg-slate-800 text-istpet-blue dark:text-istpet-gold shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                >
+                  <GraduationCap size={15} /> Inscritos
+                  <span className="ml-1 bg-istpet-blue/10 dark:bg-istpet-gold/10 text-istpet-blue dark:text-istpet-gold text-xs px-1.5 py-0.5 rounded-full font-bold">{registrations.length}</span>
+                </button>
                 <button
                   onClick={() => setAuditTab('attendance')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${auditTab === 'attendance' ? 'bg-white dark:bg-slate-800 text-istpet-blue dark:text-istpet-gold shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
@@ -499,6 +524,44 @@ const AdminEvents = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto">
+              {auditTab === 'registrations' && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-slate-50 dark:bg-slate-800/50">
+                      <tr>
+                        <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">Nombre</th>
+                        <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">CI / Doc.</th>
+                        <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">Correo</th>
+                        <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">Carrera</th>
+                        <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">Inscrito</th>
+                        <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm text-center">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                      {registrations.map(reg => (
+                        <tr key={reg.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                          <td className="p-4 font-medium text-slate-800 dark:text-slate-100">{reg.user.firstName} {reg.user.lastName}</td>
+                          <td className="p-4 text-slate-600 dark:text-slate-300 text-sm">{reg.user.dni}</td>
+                          <td className="p-4 text-slate-600 dark:text-slate-300 text-sm">{reg.user.email}</td>
+                          <td className="p-4 text-sm text-slate-500 dark:text-slate-400">{reg.user.career?.name || '—'}</td>
+                          <td className="p-4 text-sm text-slate-600 dark:text-slate-300">{new Date(reg.registeredAt).toLocaleDateString('es-EC')}</td>
+                          <td className="p-4 text-center">
+                            <button
+                              onClick={() => removeRegistration(reg.id, `${reg.user.firstName} ${reg.user.lastName}`)}
+                              className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
+                            >
+                              <Trash2 size={13} className="inline" /> Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {registrations.length === 0 && (
+                        <tr><td colSpan={6} className="p-12 text-center text-slate-500 dark:text-slate-400">No hay inscritos en este evento.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
               {auditTab === 'attendance' && (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">

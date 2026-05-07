@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
-import { validateDocument, getPasswordStrength } from '../lib/validators';
+import { validateDocument, validateEmail, getPasswordStrength } from '../lib/validators';
 import type { PasswordStrength } from '../lib/validators';
 import { MODALITIES, filterCareersByModality } from '../lib/modalities';
 import type { ModalityId } from '../lib/modalities';
@@ -62,6 +62,7 @@ const Register = () => {
     confirmPassword: '',
   });
   const [docError, setDocError] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -101,6 +102,9 @@ const Register = () => {
 
     const docErr = validateDocument(docType, form.ci);
     if (docErr) { setError(docErr); return; }
+
+    const emailErr = validateEmail(form.email);
+    if (emailErr) { setError(emailErr); return; }
 
     if (strength.score < 3) {
       setError('La contraseña debe ser al menos Fuerte (mayúscula, minúscula, número y símbolo).');
@@ -206,18 +210,23 @@ const Register = () => {
 
               {/* Email */}
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Correo Institucional</label>
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Correo Electrónico</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                   <input
                     required
                     type="email"
-                    className={inputClass}
-                    placeholder="usuario@istpet.edu.ec"
+                    className={`${inputClass} ${emailError ? 'border-red-500/70 focus:ring-red-500' : ''}`}
+                    placeholder="usuario@gmail.com"
                     value={form.email}
-                    onChange={e => set('email', e.target.value)}
+                    onChange={e => {
+                      const v = e.target.value;
+                      set('email', v);
+                      setEmailError(v.length > 0 ? (validateEmail(v) ?? '') : '');
+                    }}
                   />
                 </div>
+                {emailError && <p className="text-red-400 text-xs mt-1">{emailError}</p>}
               </div>
 
               {/* Tipo de documento */}

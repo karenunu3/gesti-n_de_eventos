@@ -94,8 +94,10 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
+    const eventId = parseInt(id as string);
+
     const event = await prisma.event.update({
-      where: { id: parseInt(id as string) },
+      where: { id: eventId },
       data: {
         title, description, capacity, hours, latitude, longitude, radiusMeters, isTransversal,
         startDate: startDateObj,
@@ -103,8 +105,24 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
         careers: careers && careers.length > 0 ? {
           set: careers.map((cId: number) => ({ id: cId }))
         } : { set: [] }
-      }
+      },
+      include: { careers: true }
     });
+
+    // Auto-purga: si el evento es específico, eliminar inscritos cuya carrera ya no esté permitida
+    if (!isTransversal) {
+      const allowedCareerIds = event.careers.map(c => c.id);
+      const registrations = await prisma.eventRegistration.findMany({
+        where: { eventId },
+        include: { user: { select: { id: true, role: true, careerId: true } } }
+      });
+      const toRemove = registrations
+        .filter(r => r.user.role === 'ALUMNO' && (!r.user.careerId || !allowedCareerIds.includes(r.user.careerId)))
+        .map(r => r.id);
+      if (toRemove.length > 0) {
+        await prisma.eventRegistration.deleteMany({ where: { id: { in: toRemove } } });
+      }
+    }
 
     res.status(200).json(event);
   } catch (error: any) {
@@ -194,6 +212,24 @@ export const getEvents = async (req: any, res: Response): Promise<void> => {
   }
 };
 
+export const removeRegistration = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const regId = parseInt(req.params.regId as string);
+    if (Number.isNaN(regId)) {
+      res.status(400).json({ message: 'ID de inscripción inválido' });
+      return;
+    }
+    await prisma.eventRegistration.delete({ where: { id: regId } });
+    res.status(200).json({ message: 'Inscripción eliminada' });
+  } catch (error: any) {
+    if (error.code === 'P2025') {
+      res.status(404).json({ message: 'Inscripción no encontrada' });
+    } else {
+      res.status(500).json({ message: 'Error al eliminar inscripción', error: error.message });
+    }
+  }
+};
+
 export const getEventById = async (req: Request, res: Response): Promise<void> => {
   try {
     const eventId = parseInt(req.params.id as string);
@@ -202,7 +238,8 @@ export const getEventById = async (req: Request, res: Response): Promise<void> =
       include: {
         careers: true,
         registrations: {
-          include: { user: { select: { id: true, firstName: true, lastName: true, dni: true } } }
+          include: { user: { select: { id: true, firstName: true, lastName: true, dni: true, email: true, career: true, modalities: true } } },
+          orderBy: { registeredAt: 'desc' }
         }
       }
     });
@@ -298,6 +335,22 @@ export const registerToEvent = async (req: any, res: Response): Promise<void> =>
     if (event.capacity && event._count.registrations >= event.capacity) {
       res.status(400).json({ message: 'El evento no tiene cupos disponibles' });
       return;
+    }
+
+    // Verificar coherencia de carrera (si el evento es específico)
+    if (!event.isTransversal) {
+      const userInfo = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { careerId: true, role: true }
+      });
+      // Solo aplicamos esta restricción a alumnos
+      if (userInfo?.role === 'ALUMNO') {
+        const allowedCareerIds = event.careers.map(c => c.id);
+        if (!userInfo.careerId || !allowedCareerIds.includes(userInfo.careerId)) {
+          res.status(403).json({ message: 'Este evento es específico para otras carreras. No estás autorizado a inscribirte.' });
+          return;
+        }
+      }
     }
 
     // Registrar inscripción

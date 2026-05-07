@@ -43,6 +43,22 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/careers', careerRoutes);
 app.use('/api/users', userRoutes);
 
+// Error handler global — siempre responde JSON (en lugar de HTML default de Vercel)
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('[ERROR]', err);
+  if (res.headersSent) return;
+  const status = err.statusCode || err.status || 500;
+  res.status(status).json({
+    message: err.message || 'Error interno del servidor',
+    ...(process.env.NODE_ENV !== 'production' ? { stack: err.stack } : {})
+  });
+});
+
+// 404 handler para rutas API que no existen — JSON en lugar de HTML
+app.use('/api', (_req, res) => {
+  res.status(404).json({ message: 'Endpoint no encontrado' });
+});
+
 if (process.env.NODE_ENV !== 'production') {
   app.listen(port, () => {
     console.log(`Backend de ISTPET corriendo en http://localhost:${port}`);

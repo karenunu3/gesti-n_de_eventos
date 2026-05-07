@@ -115,7 +115,7 @@ const ForgotPassword = () => {
                 type="email"
                 required
                 className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-istpet-gold transition-all"
-                placeholder="ejemplo@istpet.edu.ec"
+                placeholder="usuario@gmail.com"
                 value={email}
                 onChange={e => {
                   setEmail(e.target.value);

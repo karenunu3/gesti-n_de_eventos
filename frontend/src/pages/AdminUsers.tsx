@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchApi } from '../lib/api';
-import { validateDocument, getPasswordStrength } from '../lib/validators';
+import { validateDocument, validateEmail, getPasswordStrength } from '../lib/validators';
 import type { PasswordStrength } from '../lib/validators';
 import { MODALITIES, filterCareersByModality } from '../lib/modalities';
 import type { ModalityId } from '../lib/modalities';
@@ -136,6 +136,9 @@ const AdminUsers = () => {
     const docErr = validateDocument(form.docType, form.ci);
     if (docErr) { setFormError(docErr); return; }
 
+    const emailErr = validateEmail(form.email);
+    if (emailErr) { setFormError(emailErr); return; }
+
     if (strength.score < 3) {
       setFormError('La contraseña debe ser al menos Fuerte (mayúscula, minúscula, número y símbolo).');
       return;
@@ -250,7 +253,7 @@ const AdminUsers = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => { if (window.history.length > 1) navigate(-1); else navigate('/dashboard'); }}
             className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-istpet-blue dark:hover:text-istpet-gold transition-colors font-medium shadow-sm text-sm"
           >
             <ArrowLeft size={16} /> Volver
@@ -465,7 +468,7 @@ const AdminUsers = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Correo *</label>
-                <input required type="email" className={inputClass} placeholder="usuario@istpet.edu.ec" value={form.email} onChange={e => set('email', e.target.value)} />
+                <input required type="email" className={inputClass} placeholder="usuario@gmail.com" value={form.email} onChange={e => set('email', e.target.value)} />
               </div>
 
               {/* Documento */}

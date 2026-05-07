@@ -39,9 +39,18 @@ export const markAttendance = async (req: any, res: Response): Promise<void> => 
       return;
     }
 
-    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: { _count: { select: { attendances: true } } }
+    });
     if (!event) {
       res.status(404).json({ message: 'Evento no encontrado' });
+      return;
+    }
+
+    // Bloquear si el cupo de asistencias ya se llenó
+    if (event.capacity && event._count.attendances >= event.capacity) {
+      res.status(400).json({ message: 'El cupo del evento ya está lleno. No se aceptan más asistencias.' });
       return;
     }
 

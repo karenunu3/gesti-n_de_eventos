@@ -26,6 +26,7 @@ const Dashboard = () => {
   const [eventsData, setEventsData] = useState<any[]>([]);
   const [rawEvents, setRawEvents] = useState<any[]>([]);
   const [eventStats, setEventStats] = useState({ total: 0, totalRegistrations: 0, totalAttendances: 0 });
+  const [adminStats, setAdminStats] = useState({ usersTotal: 0, alumnos: 0, docentes: 0, careersTotal: 0 });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -89,6 +90,23 @@ const Dashboard = () => {
         totalRegistrations: data.reduce((s: number, e: any) => s + (e._count?.registrations || 0), 0),
         totalAttendances: data.reduce((s: number, e: any) => s + (e._count?.attendances || 0), 0),
       });
+
+      // Estadísticas adicionales para los QuickCards (solo admin/secretaria)
+      try {
+        const u = JSON.parse(localStorage.getItem('user') || '{}');
+        if (['ADMIN', 'SECRETARIA'].includes(u.role)) {
+          const [careers, users] = await Promise.all([
+            fetchApi('/careers').catch(() => []),
+            u.role === 'ADMIN' ? fetchApi('/users').catch(() => []) : Promise.resolve([])
+          ]);
+          setAdminStats({
+            usersTotal: users.length,
+            alumnos: users.filter((x: any) => x.role === 'ALUMNO').length,
+            docentes: users.filter((x: any) => x.role === 'DOCENTE').length,
+            careersTotal: careers.length,
+          });
+        }
+      } catch {}
     } catch (err) {
       console.error(err);
     }
@@ -296,8 +314,14 @@ const Dashboard = () => {
                 {rawEvents.length > 0 ? (
                   rawEvents.slice(0, 5).map(event => {
                     const isPast = new Date(event.endDate) < new Date();
+                    const targetPath = ['ADMIN', 'SECRETARIA', 'DOCENTE'].includes(user.role) ? '/admin/events' : '/events';
                     return (
-                      <div key={event.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600 hover:border-istpet-blue/30 dark:hover:border-istpet-gold/30 transition-colors">
+                      <button
+                        key={event.id}
+                        type="button"
+                        onClick={() => navigate(targetPath)}
+                        className="text-left w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600 hover:border-istpet-blue dark:hover:border-istpet-gold hover:shadow-md transition-all cursor-pointer"
+                      >
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 line-clamp-1" title={event.title}>{event.title}</h4>
                           {isPast ? (
@@ -320,7 +344,7 @@ const Dashboard = () => {
                             {new Date(event.startDate).toLocaleDateString('es-EC', { day: 'numeric', month: 'short' })}
                           </span>
                         </div>
-                      </div>
+                      </button>
                     );
                   })
                 ) : (
@@ -413,18 +437,27 @@ const Dashboard = () => {
               iconBg="bg-istpet-blue/10 dark:bg-istpet-gold/10"
               title={t('dashboard.admin_events')}
               desc="Crea y gestiona eventos, proyecta QR para asistencia y audita registros."
+              stats={[
+                { label: 'Eventos del mes', value: eventStats.total },
+                { label: 'Inscritos', value: eventStats.totalRegistrations },
+                { label: 'Asistencias', value: eventStats.totalAttendances },
+              ]}
               btnLabel="Ir a Eventos"
               btnClass="bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light"
               onClick={() => navigate('/admin/events')}
             />
             {['ADMIN', 'SECRETARIA'].includes(user.role) && (
               <QuickCard
-                icon={<Layers size={20} className="text-istpet-gold" />}
-                iconBg="bg-istpet-gold/10"
+                icon={<Layers size={20} className="text-istpet-blue dark:text-istpet-gold" />}
+                iconBg="bg-istpet-blue/10 dark:bg-istpet-gold/10"
                 title={t('dashboard.admin_careers')}
                 desc="Administra las carreras del instituto. Asócialas con eventos específicos."
+                stats={[
+                  { label: 'Carreras activas', value: adminStats.careersTotal },
+                  { label: 'Modalidades', value: 4 },
+                ]}
                 btnLabel="Ir a Carreras"
-                btnClass="bg-istpet-gold text-istpet-blue hover:bg-istpet-gold-dark"
+                btnClass="bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light"
                 onClick={() => navigate('/admin/careers')}
               />
             )}
@@ -434,6 +467,11 @@ const Dashboard = () => {
                 iconBg="bg-istpet-blue/10 dark:bg-istpet-gold/10"
                 title={t('dashboard.admin_users')}
                 desc="Gestiona el personal y alumnado. Asigna roles y permisos."
+                stats={[
+                  { label: 'Total usuarios', value: adminStats.usersTotal },
+                  { label: 'Alumnos', value: adminStats.alumnos },
+                  { label: 'Docentes', value: adminStats.docentes },
+                ]}
                 btnLabel="Ir a Usuarios"
                 btnClass="bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light"
                 onClick={() => navigate('/admin/users')}
@@ -446,11 +484,22 @@ const Dashboard = () => {
   );
 };
 
-const QuickCard = ({ icon, iconBg, title, desc, btnLabel, btnClass, onClick }: any) => (
+const QuickCard = ({ icon, iconBg, title, desc, btnLabel, btnClass, onClick, stats }: any) => (
   <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow flex flex-col">
     <div className={`p-3 ${iconBg} rounded-xl w-fit mb-4`}>{icon}</div>
     <h4 className="text-base font-bold text-slate-800 dark:text-slate-50 mb-1">{title}</h4>
-    <p className="text-slate-500 dark:text-slate-400 mb-5 text-sm flex-1">{desc}</p>
+    <p className="text-slate-500 dark:text-slate-400 mb-4 text-sm">{desc}</p>
+    {Array.isArray(stats) && stats.length > 0 && (
+      <div className="grid gap-2 mb-4 pt-3 border-t border-slate-100 dark:border-slate-700" style={{ gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}>
+        {stats.map((s: any) => (
+          <div key={s.label} className="text-center">
+            <div className="text-2xl font-extrabold text-istpet-blue dark:text-istpet-gold">{s.value}</div>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight uppercase tracking-wide">{s.label}</p>
+          </div>
+        ))}
+      </div>
+    )}
+    <div className="flex-1" />
     <button onClick={onClick} className={`px-5 py-2.5 rounded-xl font-bold w-full transition-colors text-sm ${btnClass}`}>
       {btnLabel}
     </button>
