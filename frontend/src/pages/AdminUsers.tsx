@@ -4,6 +4,8 @@ import { validateDocument, validateEmail, getPasswordStrength } from '../lib/val
 import type { PasswordStrength } from '../lib/validators';
 import { MODALITIES, filterCareersByModality } from '../lib/modalities';
 import type { ModalityId } from '../lib/modalities';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import LiveIndicator from '../components/LiveIndicator';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, Shield, ShieldAlert, BookOpen, GraduationCap, ArrowLeft,
@@ -80,6 +82,11 @@ const AdminUsers = () => {
     loadUsers();
     fetchApi('/careers').then(setCareers).catch(() => {});
   }, []);
+
+  // Auto-refresh cada 25s (pausado mientras el modal de creación esté abierto)
+  const refresh = useAutoRefresh(async () => {
+    await loadUsers();
+  }, 25000, !showModal);
 
   const loadUsers = async () => {
     try {
@@ -269,12 +276,15 @@ const AdminUsers = () => {
           </div>
         </div>
 
-        <button
-          onClick={openModal}
-          className="flex items-center gap-2 px-5 py-2.5 bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 rounded-xl font-bold hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light transition-colors shadow-sm text-sm"
-        >
-          <UserPlus size={16} /> Crear Usuario
-        </button>
+        <div className="flex items-center gap-3">
+          <LiveIndicator isRefreshing={refresh.isRefreshing} lastRefreshAt={refresh.lastRefreshAt} onRefresh={refresh.refreshNow} />
+          <button
+            onClick={openModal}
+            className="flex items-center gap-2 px-5 py-2.5 bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 rounded-xl font-bold hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light transition-colors shadow-sm text-sm"
+          >
+            <UserPlus size={16} /> Crear Usuario
+          </button>
+        </div>
       </div>
 
       {/* Tabs y Filtros */}

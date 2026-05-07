@@ -6,6 +6,8 @@ import { validateDocument, validateEmail, getPasswordStrength } from '../lib/val
 import type { PasswordStrength } from '../lib/validators';
 import { MODALITIES, userInModality } from '../lib/modalities';
 import type { ModalityId } from '../lib/modalities';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import LiveIndicator from '../components/LiveIndicator';
 
 const PasswordStrengthBar = ({ strength }: { strength: PasswordStrength }) => {
   if (!strength.score && strength.label === '') return null;
@@ -105,6 +107,11 @@ const AdminCareers = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Auto-refresh cada 25s (pausado mientras el modal de gestión esté abierto)
+  const refresh = useAutoRefresh(async () => {
+    await loadData();
+  }, 25000, !selectedCareer);
 
   const setF = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -223,10 +230,11 @@ const AdminCareers = () => {
             <ArrowLeft size={18} />
             Volver
           </button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-50">Gestión de Carreras</h1>
             <p className="text-slate-500 dark:text-slate-400 mt-1">Administra el alumnado y personal de cada modalidad.</p>
           </div>
+          <LiveIndicator isRefreshing={refresh.isRefreshing} lastRefreshAt={refresh.lastRefreshAt} onRefresh={refresh.refreshNow} />
         </div>
 
         {/* Modalidades Grid */}

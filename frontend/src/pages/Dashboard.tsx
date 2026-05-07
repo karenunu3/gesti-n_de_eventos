@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import LiveIndicator from '../components/LiveIndicator';
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Administrador',
@@ -55,6 +57,16 @@ const Dashboard = () => {
       navigate('/login', { replace: true });
     }
   }, []);
+
+  // Auto-refresh cada 30s (respeta visibilidad del tab)
+  const { isRefreshing, lastRefreshAt, refreshNow } = useAutoRefresh(async () => {
+    if (!user) return;
+    if (user.role === 'ALUMNO') await loadReport();
+    else if (['ADMIN', 'SECRETARIA', 'DOCENTE'].includes(user.role)) {
+      await loadAdminData();
+      if (user.role === 'DOCENTE') await loadDocenteReport();
+    }
+  }, 30000, !!user);
 
   const loadReport = async () => {
     try {
@@ -150,16 +162,19 @@ const Dashboard = () => {
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto w-full fade-in" translate="no">
       {/* Page header */}
-      <div className="mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-50">
-          {t('dashboard.welcome', { name: user.firstName })}
-        </h2>
-        <p className="text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 text-sm">
-          {t('dashboard.subtitle')}
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-istpet-blue/10 dark:bg-istpet-gold/10 text-istpet-blue dark:text-istpet-gold text-xs font-semibold">
-            {ROLE_LABELS[user.role] || user.role}
-          </span>
-        </p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-50">
+            {t('dashboard.welcome', { name: user.firstName })}
+          </h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 text-sm">
+            {t('dashboard.subtitle')}
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-istpet-blue/10 dark:bg-istpet-gold/10 text-istpet-blue dark:text-istpet-gold text-xs font-semibold">
+              {ROLE_LABELS[user.role] || user.role}
+            </span>
+          </p>
+        </div>
+        <LiveIndicator isRefreshing={isRefreshing} lastRefreshAt={lastRefreshAt} onRefresh={refreshNow} />
       </div>
 
       {/* ── ALUMNO VIEW ── */}

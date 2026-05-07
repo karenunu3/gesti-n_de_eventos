@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import LocationPicker from '../components/LocationPicker';
 import { QRCodeCanvas } from 'qrcode.react';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import LiveIndicator from '../components/LiveIndicator';
 
 const ISTPET_LAT = -0.2824216;
 const ISTPET_LNG = -78.5555266;
@@ -51,6 +53,20 @@ const AdminEvents = () => {
     loadEvents();
     loadCareers();
   }, []);
+
+  // Auto-refresh: lista de eventos cada 20s; auditoría (registros + asistencias + encuestas) cada 10s mientras el modal esté abierto
+  const refreshAll = useAutoRefresh(async () => {
+    await loadEvents();
+  }, 20000, !showForm);
+
+  useAutoRefresh(async () => {
+    if (!selectedEventId) return;
+    await Promise.all([
+      loadRegistrations(selectedEventId),
+      loadAttendances(selectedEventId),
+      loadSurveys(selectedEventId),
+    ]);
+  }, 10000, !!selectedEventId);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -241,6 +257,7 @@ const AdminEvents = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <LiveIndicator isRefreshing={refreshAll.isRefreshing} lastRefreshAt={refreshAll.lastRefreshAt} onRefresh={refreshAll.refreshNow} />
             <span className="text-sm text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg">
               {filteredEvents.length} evento{filteredEvents.length !== 1 ? 's' : ''}
             </span>

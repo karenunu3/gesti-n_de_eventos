@@ -4,6 +4,8 @@ import { Calendar, MapPin, Clock, CheckCircle, XCircle, Star, QrCode, ArrowLeft,
 import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import LiveIndicator from '../components/LiveIndicator';
 
 const Events = () => {
   const { t } = useTranslation();
@@ -49,6 +51,15 @@ const Events = () => {
     loadCareers();
 
     // Cleanup QR scanner when component unmounts (prevent DOM/camera leaks on navigation)
+    return () => { /* noop sentinel for ts narrowing */ };
+  }, []);
+
+  // Auto-refresh: cada 20s mientras NO esté abierto el escáner QR ni la encuesta
+  const refresh = useAutoRefresh(async () => {
+    await loadEvents();
+  }, 20000, !attendanceEventId && !showSurvey);
+
+  useEffect(() => {
     return () => {
       if (scannerRef.current) {
         scannerRef.current.stop().catch(() => {});
@@ -266,9 +277,12 @@ const Events = () => {
             </button>
             <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-50">{t('events.title')}</h1>
           </div>
-          <span className="text-sm text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg">
-            {filteredEvents.length} evento{filteredEvents.length !== 1 ? 's' : ''}
-          </span>
+          <div className="flex items-center gap-3">
+            <LiveIndicator isRefreshing={refresh.isRefreshing} lastRefreshAt={refresh.lastRefreshAt} onRefresh={refresh.refreshNow} />
+            <span className="text-sm text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg">
+              {filteredEvents.length} evento{filteredEvents.length !== 1 ? 's' : ''}
+            </span>
+          </div>
         </div>
 
         {/* Mensaje global */}
