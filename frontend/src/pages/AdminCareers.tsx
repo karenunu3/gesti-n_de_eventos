@@ -298,8 +298,8 @@ const AdminCareers = () => {
                   Modalidad: <span className="font-semibold text-istpet-blue dark:text-istpet-gold">{MODALITIES.find(m => m.id === selectedModality)?.name}</span>
                 </p>
               </div>
-              <button onClick={closeModal} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors">
-                <X size={24} />
+              <button onClick={closeModal} aria-label="Cerrar" className="flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-white hover:bg-red-500 dark:hover:bg-red-600 transition-colors">
+                <X size={22} />
               </button>
             </div>
 

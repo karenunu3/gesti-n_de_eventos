@@ -1,5 +1,5 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { LogOut, User, Moon, Sun, Monitor, Globe, Calendar, LayoutDashboard, Settings2 } from 'lucide-react';
+import { LogOut, User, Moon, Sun, Monitor, Globe, Calendar, LayoutDashboard, Settings2, ChevronDown, Layers, Users as UsersIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../lib/ThemeContext';
 import { useState } from 'react';
@@ -10,6 +10,7 @@ const Navbar = () => {
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
   const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const [showAdminMenu, setShowAdminMenu] = useState(false);
 
   // useLocation() triggers a re-render on every route change,
   // so reading localStorage here is always fresh — no useState/useEffect needed.
@@ -42,13 +43,20 @@ const Navbar = () => {
   const navLinks = [
     { to: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={15} />, show: true },
     { to: '/events', label: t('events.title'), icon: <Calendar size={15} />, show: true },
-    { to: '/admin/events', label: 'Admin', icon: <Settings2 size={15} />, show: isAdmin },
+  ];
+
+  const adminSubLinks = [
+    { to: '/admin/events', label: 'Eventos', icon: <Calendar size={14} />, show: true },
+    { to: '/admin/careers', label: 'Carreras', icon: <Layers size={14} />, show: ['ADMIN', 'SECRETARIA'].includes(user?.role) },
+    { to: '/admin/users', label: 'Usuarios', icon: <UsersIcon size={14} />, show: user?.role === 'ADMIN' },
   ];
 
   const isActive = (to: string) =>
     to === '/dashboard'
       ? location.pathname === to
       : location.pathname === to || location.pathname.startsWith(to + '/');
+
+  const isAdminActive = location.pathname.startsWith('/admin');
 
   return (
     <nav className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 shadow-sm transition-colors duration-300">
@@ -79,6 +87,43 @@ const Navbar = () => {
                   {link.label}
                 </Link>
               ))}
+
+              {/* Admin dropdown */}
+              {isAdmin && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowAdminMenu(v => !v)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      isAdminActive
+                        ? 'bg-istpet-blue/10 dark:bg-istpet-gold/10 text-istpet-blue dark:text-istpet-gold'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-50'
+                    }`}
+                  >
+                    <Settings2 size={15} /> Admin <ChevronDown size={13} className={`transition-transform ${showAdminMenu ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showAdminMenu && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowAdminMenu(false)} />
+                      <div className="absolute left-0 mt-1 w-44 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden py-1 z-50">
+                        {adminSubLinks.filter(l => l.show).map(sub => (
+                          <Link
+                            key={sub.to}
+                            to={sub.to}
+                            onClick={() => setShowAdminMenu(false)}
+                            className={`flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors ${
+                              location.pathname === sub.to
+                                ? 'text-istpet-blue dark:text-istpet-gold font-semibold bg-slate-50 dark:bg-slate-700'
+                                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                            }`}
+                          >
+                            {sub.icon} {sub.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -162,6 +207,20 @@ const Navbar = () => {
             >
               {link.icon}
               {link.label}
+            </Link>
+          ))}
+          {isAdmin && adminSubLinks.filter(l => l.show).map(sub => (
+            <Link
+              key={sub.to}
+              to={sub.to}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
+                location.pathname === sub.to
+                  ? 'bg-istpet-blue/10 dark:bg-istpet-gold/10 text-istpet-blue dark:text-istpet-gold'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              {sub.icon}
+              <span>{sub.label}</span>
             </Link>
           ))}
         </div>

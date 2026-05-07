@@ -393,7 +393,7 @@ const AdminEvents = () => {
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800 z-10 rounded-t-3xl">
               <h2 className="text-xl font-bold text-slate-800 dark:text-slate-50">{editingEventId ? 'Editar Evento' : 'Nuevo Evento'}</h2>
-              <button onClick={closeForm} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"><X size={20} /></button>
+              <button onClick={closeForm} aria-label="Cerrar" className="flex items-center justify-center w-10 h-10 text-slate-500 hover:text-white hover:bg-red-500 dark:hover:bg-red-600 rounded-xl transition-colors border border-slate-200 dark:border-slate-600"><X size={22} /></button>
             </div>
             <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8">
               <div>
@@ -492,8 +492,8 @@ const AdminEvents = () => {
                       <FileSpreadsheet size={16} /> Exportar Excel
                     </button>
                   )}
-                  <button onClick={() => setSelectedEventId(null)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors">
-                    <X size={20} />
+                  <button onClick={() => setSelectedEventId(null)} aria-label="Cerrar" className="flex items-center justify-center w-10 h-10 text-slate-500 hover:text-white hover:bg-red-500 dark:hover:bg-red-600 rounded-xl transition-colors border border-slate-200 dark:border-slate-600">
+                    <X size={22} />
                   </button>
                 </div>
               </div>
@@ -682,7 +682,7 @@ const AdminEvents = () => {
       {showQrModal && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-2xl w-full text-center relative shadow-2xl border border-slate-100 dark:border-slate-700">
-            <button onClick={() => { setShowQrModal(null); setQrAttendanceCount(0); }} className="absolute top-5 right-5 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+            <button onClick={() => { setShowQrModal(null); setQrAttendanceCount(0); }} aria-label="Cerrar" className="absolute top-5 right-5 flex items-center justify-center w-11 h-11 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-white hover:bg-red-500 dark:hover:bg-red-600 transition-colors">
               <X size={24} />
             </button>
 

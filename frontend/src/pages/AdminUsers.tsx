@@ -441,9 +441,10 @@ const AdminUsers = () => {
               </h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                aria-label="Cerrar"
+                className="flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-white hover:bg-red-500 dark:hover:bg-red-600 transition-colors"
               >
-                <X size={20} />
+                <X size={22} />
               </button>
             </div>
 

@@ -247,9 +247,9 @@ const Dashboard = () => {
           {/* Quick stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {[
-              { label: 'Total Eventos', value: eventStats.total, icon: <Calendar size={20} />, color: 'from-blue-500 to-indigo-600' },
-              { label: 'Inscripciones totales', value: eventStats.totalRegistrations, icon: <Users size={20} />, color: 'from-amber-400 to-orange-500' },
-              { label: 'Asistencias', value: eventStats.totalAttendances, icon: <CheckCircle size={20} />, color: 'from-emerald-400 to-teal-500' },
+              { label: 'Total Eventos', value: eventStats.total, icon: <Calendar size={20} />, color: 'from-istpet-blue to-istpet-blue-light' },
+              { label: 'Inscripciones totales', value: eventStats.totalRegistrations, icon: <Users size={20} />, color: 'from-istpet-gold to-istpet-gold-light' },
+              { label: 'Asistencias', value: eventStats.totalAttendances, icon: <CheckCircle size={20} />, color: 'from-istpet-blue-light to-istpet-gold' },
             ].map(stat => (
               <div key={stat.label} className="relative overflow-hidden bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg transition-all group">
                 <div className={`absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br ${stat.color} rounded-full opacity-10 group-hover:scale-150 transition-transform duration-500`} />
@@ -490,11 +490,11 @@ const QuickCard = ({ icon, iconBg, title, desc, btnLabel, btnClass, onClick, sta
     <h4 className="text-base font-bold text-slate-800 dark:text-slate-50 mb-1">{title}</h4>
     <p className="text-slate-500 dark:text-slate-400 mb-4 text-sm">{desc}</p>
     {Array.isArray(stats) && stats.length > 0 && (
-      <div className="grid gap-2 mb-4 pt-3 border-t border-slate-100 dark:border-slate-700" style={{ gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}>
+      <div className="grid grid-cols-3 gap-2 mb-4 pt-3 border-t border-slate-100 dark:border-slate-700">
         {stats.map((s: any) => (
-          <div key={s.label} className="text-center">
-            <div className="text-2xl font-extrabold text-istpet-blue dark:text-istpet-gold">{s.value}</div>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight uppercase tracking-wide">{s.label}</p>
+          <div key={s.label} className="text-center min-w-0">
+            <div className="text-xl md:text-2xl font-extrabold text-istpet-blue dark:text-istpet-gold truncate">{s.value}</div>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight uppercase tracking-wide truncate">{s.label}</p>
           </div>
         ))}
       </div>
