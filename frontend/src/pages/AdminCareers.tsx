@@ -73,7 +73,24 @@ const AdminCareers = () => {
 
   const loadData = async () => {
     try {
-      const [cData, uData] = await Promise.all([fetchApi('/careers'), fetchApi('/users')]);
+      let [cData, uData] = await Promise.all([fetchApi('/careers'), fetchApi('/users')]);
+
+      // Auto-sembrado: crear cualquier carrera de MODALITIES que no exista en BD
+      const dbNames = new Set(cData.map((c: any) => c.name));
+      const expected = new Set<string>();
+      MODALITIES.forEach(m => m.careerNames.forEach(n => expected.add(n)));
+      const missing = [...expected].filter(n => !dbNames.has(n));
+
+      if (missing.length > 0) {
+        await Promise.allSettled(
+          missing.map(name =>
+            fetchApi('/careers', { method: 'POST', body: JSON.stringify({ name }) })
+          )
+        );
+        // Recargar carreras tras el seed
+        cData = await fetchApi('/careers');
+      }
+
       setCareers(cData);
       setUsers(uData);
     } catch (err) {
