@@ -31,10 +31,10 @@ model User {
   dni       String   @unique
   role      Role     @default(ALUMNO)
   
-  careerId  Int?
-  career    Career?  @relation(fields: [careerId], references: [id])
-  modality  String?
-  semester  Int?
+  careerId   Int?
+  career     Career?  @relation(fields: [careerId], references: [id])
+  modalities String[] @default([])
+  semester   Int?
 
   resetToken       String?
   resetTokenExpiry DateTime?

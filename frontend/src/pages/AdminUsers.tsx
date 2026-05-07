@@ -65,7 +65,7 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm]       = useState({ ...emptyForm });
-  const [modalityId, setModalityId] = useState<ModalityId | ''>('');
+  const [modalityIds, setModalityIds] = useState<ModalityId[]>([]);
   const [docError, setDocError] = useState('');
   const [formError, setFormError]   = useState('');
   const [formLoading, setFormLoading] = useState(false);
@@ -114,10 +114,19 @@ const AdminUsers = () => {
 
   const openModal = () => {
     setForm({ ...emptyForm });
-    setModalityId('');
+    setModalityIds([]);
     setFormError('');
     setDocError('');
     setShowModal(true);
+  };
+
+  const toggleModality = (id: ModalityId) => {
+    setModalityIds(prev => {
+      // Alumno: una sola; Docente: múltiples
+      if (form.role === 'ALUMNO') return prev.includes(id) ? [] : [id];
+      return prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+    });
+    setForm(prev => ({ ...prev, careerId: '' }));
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -147,7 +156,7 @@ const AdminUsers = () => {
           password: form.password,
           role: form.role,
           careerId: form.careerId || null,
-          modality: modalityId || null,
+          modalities: modalityIds,
         }),
       });
       setShowModal(false);
@@ -175,7 +184,10 @@ const AdminUsers = () => {
     try {
       await fetchApi(`/users/${id}/career`, {
         method: 'PUT',
-        body: JSON.stringify({ careerId: newCareerId || null, modality: newModality }),
+        body: JSON.stringify({
+          careerId: newCareerId || null,
+          modalities: newModality ? [newModality] : []
+        }),
       });
       loadUsers();
     } catch (err: any) {
@@ -337,7 +349,7 @@ const AdminUsers = () => {
                         <span className="italic text-slate-400 dark:text-slate-500">N/A</span>
                       ) : (
                         <select
-                          value={u.modality && u.career?.id ? `${u.modality}|${u.career.id}` : ''}
+                          value={(u.modalities && u.modalities[0] && u.career?.id) ? `${u.modalities[0]}|${u.career.id}` : ''}
                           onChange={e => {
                             const v = e.target.value;
                             if (!v) { handleCareerChange(u.id, '', null); return; }
@@ -500,33 +512,55 @@ const AdminUsers = () => {
               </div>
 
               {(form.role === 'ALUMNO' || form.role === 'DOCENTE') && (
-                <div className="grid grid-cols-2 gap-3">
+                <>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Modalidad</label>
-                    <select
-                      className={inputClass}
-                      value={modalityId}
-                      onChange={e => {
-                        setModalityId(e.target.value as ModalityId | '');
-                        set('careerId', '');
-                      }}
-                    >
-                      <option value="">Todas</option>
-                      {MODALITIES.map(m => (
-                        <option key={m.id} value={m.id}>{m.name}</option>
-                      ))}
-                    </select>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                      Modalidad{form.role === 'DOCENTE' ? ' (puede seleccionar varias)' : ''}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {MODALITIES.map(m => {
+                        const active = modalityIds.includes(m.id);
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => toggleModality(m.id)}
+                            className={`py-2 px-3 rounded-xl border text-sm font-medium transition-colors ${
+                              active
+                                ? 'bg-istpet-blue/10 dark:bg-istpet-gold/10 border-istpet-blue dark:border-istpet-gold text-istpet-blue dark:text-istpet-gold'
+                                : 'bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-300'
+                            }`}
+                          >
+                            {active && <Check size={14} className="inline mr-1" />}
+                            {m.name}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Carrera</label>
-                    <select className={inputClass} value={form.careerId} onChange={e => set('careerId', e.target.value)}>
-                      <option value="">Sin carrera</option>
-                      {filterCareersByModality(careers, modalityId).map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
+                    <select
+                      className={inputClass}
+                      value={form.careerId}
+                      onChange={e => set('careerId', e.target.value)}
+                      disabled={modalityIds.length === 0}
+                    >
+                      <option value="">{modalityIds.length === 0 ? 'Elige modalidad primero' : 'Sin carrera'}</option>
+                      {(() => {
+                        // Unir carreras de todas las modalidades seleccionadas
+                        const seen = new Set<number>();
+                        const result: typeof careers = [];
+                        modalityIds.forEach(mid => {
+                          filterCareersByModality(careers, mid).forEach(c => {
+                            if (!seen.has(c.id)) { seen.add(c.id); result.push(c); }
+                          });
+                        });
+                        return result.map(c => <option key={c.id} value={c.id}>{c.name}</option>);
+                      })()}
                     </select>
                   </div>
-                </div>
+                </>
               )}
 
               <div>

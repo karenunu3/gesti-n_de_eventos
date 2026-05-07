@@ -59,3 +59,11 @@ export function filterCareersByModality<T extends CareerLite>(
   if (!m) return careers;
   return careers.filter(c => m.careerNames.includes(c.name));
 }
+
+export function getModalityName(id: string): string {
+  return MODALITIES.find(m => m.id === id)?.name ?? id;
+}
+
+export function userInModality(user: { modalities?: string[] | null }, modalityId: ModalityId): boolean {
+  return Array.isArray(user.modalities) && user.modalities.includes(modalityId);
+}

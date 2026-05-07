@@ -123,7 +123,7 @@ const Register = () => {
           password: form.password,
           role: form.role,
           careerId: form.careerId ? parseInt(form.careerId) : null,
-          modality: modalityId || null,
+          modalities: modalityId ? [modalityId] : [],
           semester: form.semester ? parseInt(form.semester) : null,
         }),
       });

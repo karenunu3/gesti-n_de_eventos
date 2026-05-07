@@ -13,7 +13,7 @@ export const getUsers = async (req: any, res: any): Promise<void> => {
         dni: true,
         role: true,
         career: true,
-        modality: true,
+        modalities: true,
         createdAt: true
       },
       orderBy: { createdAt: 'desc' }
@@ -26,7 +26,7 @@ export const getUsers = async (req: any, res: any): Promise<void> => {
 
 export const createUser = async (req: any, res: any): Promise<void> => {
   try {
-    const { email, password, firstName, lastName, dni, role, careerId, modality } = req.body;
+    const { email, password, firstName, lastName, dni, role, careerId, modalities } = req.body;
 
     if (!email || !password || !firstName || !lastName || !dni) {
       res.status(400).json({ message: 'Todos los campos obligatorios deben estar completos.' });
@@ -56,9 +56,9 @@ export const createUser = async (req: any, res: any): Promise<void> => {
         dni,
         role: assignedRole,
         careerId: careerId ? parseInt(careerId) : null,
-        modality: modality || null
+        modalities: Array.isArray(modalities) ? modalities : []
       },
-      select: { id: true, email: true, firstName: true, lastName: true, dni: true, role: true, career: true, modality: true, createdAt: true }
+      select: { id: true, email: true, firstName: true, lastName: true, dni: true, role: true, career: true, modalities: true, createdAt: true }
     });
 
     res.status(201).json(newUser);
@@ -112,15 +112,35 @@ export const updateUserRole = async (req: any, res: any): Promise<void> => {
 export const updateUserCareer = async (req: any, res: any): Promise<void> => {
   try {
     const { id } = req.params;
-    const { careerId, modality } = req.body;
+    const { careerId, modalities, addModality, removeModality } = req.body;
+    const userId = parseInt(id);
 
+    // Mode: addModality / removeModality (atomic add/remove for docente multi-modality)
+    if (addModality || removeModality) {
+      const current = await prisma.user.findUnique({ where: { id: userId }, select: { modalities: true } });
+      const set = new Set(current?.modalities || []);
+      if (addModality) set.add(addModality);
+      if (removeModality) set.delete(removeModality);
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...(careerId !== undefined ? { careerId: careerId ? parseInt(careerId) : null } : {}),
+          modalities: Array.from(set)
+        },
+        select: { id: true, email: true, role: true, career: true, modalities: true }
+      });
+      res.status(200).json(updated);
+      return;
+    }
+
+    // Mode: full overwrite
     const updatedUser = await prisma.user.update({
-      where: { id: parseInt(id) },
+      where: { id: userId },
       data: {
         careerId: careerId ? parseInt(careerId) : null,
-        ...(modality !== undefined ? { modality: modality || null } : {})
+        ...(modalities !== undefined ? { modalities: Array.isArray(modalities) ? modalities : [] } : {})
       },
-      select: { id: true, email: true, role: true, career: true, modality: true }
+      select: { id: true, email: true, role: true, career: true, modalities: true }
     });
 
     res.status(200).json(updatedUser);

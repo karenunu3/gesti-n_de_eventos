@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, GraduationCap, MapPin, Laptop, MonitorPlay, Building2, BookOpen, Settings, X, Plus, Trash2, UserPlus, CreditCard, KeySquare, User, Mail, Eye, EyeOff, Check } from 'lucide-react';
 import { validateDocument, getPasswordStrength } from '../lib/validators';
 import type { PasswordStrength } from '../lib/validators';
+import { MODALITIES, userInModality } from '../lib/modalities';
+import type { ModalityId } from '../lib/modalities';
 
 const PasswordStrengthBar = ({ strength }: { strength: PasswordStrength }) => {
   if (!strength.score && strength.label === '') return null;
@@ -42,43 +44,24 @@ const PasswordStrengthBar = ({ strength }: { strength: PasswordStrength }) => {
   );
 };
 
-const MODALITIES = [
-  {
-    id: 'presencial',
-    name: 'Presencial',
-    icon: <Building2 className="text-istpet-gold" />,
-    careers: ['Desarrollo de Software (Presencial)', 'Diseño Gráfico', 'Entrenamiento Deportivo', 'Educación Inicial', 'Mecánica Automotriz']
-  },
-  {
-    id: 'semipresencial',
-    name: 'Semipresencial',
-    icon: <MapPin className="text-istpet-gold" />,
-    careers: ['Educación Básica', 'Electrónica', 'Gastronomía', 'Redes y Telecomunicaciones']
-  },
-  {
-    id: 'en-linea',
-    name: 'En Línea',
-    icon: <Laptop className="text-istpet-gold" />,
-    careers: ['Desarrollo de Software (En Línea)', 'Contabilidad y Asesoría Tributaria', 'Educación Inclusiva', 'Marketing y Comercio Electrónico']
-  },
-  {
-    id: 'hibrida',
-    name: 'Híbrida',
-    icon: <MonitorPlay className="text-istpet-gold" />,
-    careers: ['Talento Humano']
-  }
-];
+const MODALITY_ICONS: Record<ModalityId, React.ReactNode> = {
+  'presencial': <Building2 className="text-istpet-gold" />,
+  'semipresencial': <MapPin className="text-istpet-gold" />,
+  'en-linea': <Laptop className="text-istpet-gold" />,
+  'hibrida': <MonitorPlay className="text-istpet-gold" />,
+};
 
 const AdminCareers = () => {
   const [careers, setCareers] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal states
+  // Modal: career + modality context (which card was clicked)
   const [selectedCareer, setSelectedCareer] = useState<any>(null);
+  const [selectedModality, setSelectedModality] = useState<ModalityId | null>(null);
   const [modalTab, setModalTab] = useState<'ALUMNO' | 'DOCENTE'>('ALUMNO');
   const [addMode, setAddMode] = useState<'EXISTING' | 'NEW'>('EXISTING');
-  
+
   const [selectedExistingUserId, setSelectedExistingUserId] = useState('');
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', ci: '', docType: 'CI' as 'CI' | 'PASAPORTE', password: '', confirmPassword: '' });
   const [docError, setDocError] = useState('');
@@ -115,12 +98,25 @@ const AdminCareers = () => {
     else setDocError('');
   };
 
+  const openCard = (dbCareer: any, modalityId: ModalityId) => {
+    setSelectedCareer(dbCareer);
+    setSelectedModality(modalityId);
+    setModalTab('ALUMNO');
+    setAddMode('EXISTING');
+    setSelectedExistingUserId('');
+  };
+
+  const closeModal = () => {
+    setSelectedCareer(null);
+    setSelectedModality(null);
+  };
+
   const handleAssignExisting = async () => {
-    if (!selectedExistingUserId || !selectedCareer) return;
+    if (!selectedExistingUserId || !selectedCareer || !selectedModality) return;
     try {
       await fetchApi(`/users/${selectedExistingUserId}/career`, {
         method: 'PUT',
-        body: JSON.stringify({ careerId: selectedCareer.id }),
+        body: JSON.stringify({ careerId: selectedCareer.id, addModality: selectedModality }),
       });
       loadData();
       setSelectedExistingUserId('');
@@ -131,7 +127,7 @@ const AdminCareers = () => {
 
   const handleCreateNew = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCareer) return;
+    if (!selectedCareer || !selectedModality) return;
     setFormError('');
 
     const docErr = validateDocument(form.docType, form.ci);
@@ -151,6 +147,7 @@ const AdminCareers = () => {
           password: form.password,
           role: modalTab,
           careerId: selectedCareer.id,
+          modalities: [selectedModality],
         }),
       });
       loadData();
@@ -165,11 +162,12 @@ const AdminCareers = () => {
   };
 
   const handleRemoveUser = async (userId: number, name: string) => {
-    if (!confirm(`¿Seguro que deseas retirar a "${name}" de esta carrera?`)) return;
+    if (!selectedModality) return;
+    if (!confirm(`¿Retirar a "${name}" de esta modalidad?`)) return;
     try {
       await fetchApi(`/users/${userId}/career`, {
         method: 'PUT',
-        body: JSON.stringify({ careerId: null }),
+        body: JSON.stringify({ removeModality: selectedModality }),
       });
       loadData();
     } catch (err: any) {
@@ -179,8 +177,12 @@ const AdminCareers = () => {
 
   const inputClass = 'w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold transition-colors';
 
-  const modalUsers = users.filter(u => u.role === modalTab && u.career?.id === selectedCareer?.id);
-  const unassignedUsers = users.filter(u => u.role === modalTab && u.career?.id !== selectedCareer?.id);
+  const modalUsers = (selectedCareer && selectedModality)
+    ? users.filter(u => u.role === modalTab && u.career?.id === selectedCareer.id && userInModality(u, selectedModality))
+    : [];
+  const unassignedUsers = (selectedCareer && selectedModality)
+    ? users.filter(u => u.role === modalTab && !(u.career?.id === selectedCareer.id && userInModality(u, selectedModality)))
+    : [];
 
   if (loading) return (
     <div className="min-h-[60vh] flex items-center justify-center">
@@ -212,21 +214,25 @@ const AdminCareers = () => {
             <div key={mod.id} className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border-t-4 border-t-istpet-gold border-l border-r border-b border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col">
               <div className="p-6 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
                 <div className="p-3 bg-istpet-gold/10 rounded-xl">
-                  {mod.icon}
+                  {MODALITY_ICONS[mod.id]}
                 </div>
                 <h2 className="text-xl font-bold text-slate-800 dark:text-slate-50">{mod.name}</h2>
               </div>
-              
+
               <div className="flex-1 p-6 space-y-4">
-                {mod.careers.map(careerName => {
+                {mod.careerNames.map(careerName => {
                   const dbCareer = careers.find(c => c.name === careerName);
-                  const studentsCount = dbCareer ? users.filter(u => u.role === 'ALUMNO' && u.career?.id === dbCareer.id).length : 0;
-                  const teachersCount = dbCareer ? users.filter(u => u.role === 'DOCENTE' && u.career?.id === dbCareer.id).length : 0;
+                  const studentsCount = dbCareer
+                    ? users.filter(u => u.role === 'ALUMNO' && u.career?.id === dbCareer.id && userInModality(u, mod.id)).length
+                    : 0;
+                  const teachersCount = dbCareer
+                    ? users.filter(u => u.role === 'DOCENTE' && u.career?.id === dbCareer.id && userInModality(u, mod.id)).length
+                    : 0;
 
                   return (
-                    <div key={careerName} className="p-5 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-200 dark:border-slate-600 hover:border-istpet-blue/30 dark:hover:border-istpet-gold/30 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div key={`${mod.id}-${careerName}`} className="p-5 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-200 dark:border-slate-600 hover:border-istpet-blue/30 dark:hover:border-istpet-gold/30 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div>
-                        <h3 className="font-bold text-istpet-blue dark:text-istpet-gold text-lg mb-2">{careerName.replace(/ \((Presencial|En Línea)\)/, '')}</h3>
+                        <h3 className="font-bold text-istpet-blue dark:text-istpet-gold text-lg mb-2">{careerName}</h3>
                         <div className="flex gap-3 text-sm font-medium">
                           <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 bg-slate-200/50 dark:bg-slate-800/50 px-2.5 py-1 rounded-lg">
                             <GraduationCap size={14} className="text-istpet-blue dark:text-istpet-gold" />
@@ -238,16 +244,12 @@ const AdminCareers = () => {
                           </span>
                         </div>
                       </div>
-                      
+
                       <button
-                        onClick={() => {
-                          if (dbCareer) {
-                            setSelectedCareer(dbCareer);
-                            setModalTab('ALUMNO');
-                          }
-                        }}
+                        onClick={() => dbCareer && openCard(dbCareer, mod.id)}
                         disabled={!dbCareer}
                         className="w-full sm:w-auto px-4 py-2.5 bg-istpet-blue hover:bg-istpet-blue-light dark:bg-istpet-gold dark:hover:bg-istpet-gold-light text-white dark:text-slate-900 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                        title={dbCareer ? 'Gestionar' : 'Carrera no encontrada en BD'}
                       >
                         <Settings size={16} /> Gestionar
                       </button>
@@ -261,7 +263,7 @@ const AdminCareers = () => {
       </div>
 
       {/* MODAL CRUD */}
-      {selectedCareer && (
+      {selectedCareer && selectedModality && (
         <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
             {/* Modal Header */}
@@ -269,17 +271,19 @@ const AdminCareers = () => {
               <div>
                 <h2 className="text-2xl font-bold text-istpet-blue dark:text-istpet-gold flex items-center gap-2">
                   <Settings size={24} />
-                  {selectedCareer.name.replace(/ \((Presencial|En Línea)\)/, '')}
+                  {selectedCareer.name}
                 </h2>
-                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Gestiona los alumnos y docentes de esta carrera.</p>
+                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+                  Modalidad: <span className="font-semibold text-istpet-blue dark:text-istpet-gold">{MODALITIES.find(m => m.id === selectedModality)?.name}</span>
+                </p>
               </div>
-              <button onClick={() => setSelectedCareer(null)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors">
+              <button onClick={closeModal} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors">
                 <X size={24} />
               </button>
             </div>
 
             <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-              {/* Left Column: List */}
+              {/* Left: list */}
               <div className="w-full md:w-1/2 border-r border-slate-100 dark:border-slate-700 flex flex-col">
                 <div className="flex p-4 border-b border-slate-100 dark:border-slate-700 gap-2">
                   <button
@@ -295,11 +299,11 @@ const AdminCareers = () => {
                     <BookOpen size={16} /> Docentes
                   </button>
                 </div>
-                
+
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                   {modalUsers.length === 0 ? (
                     <div className="text-center p-8 text-slate-400 dark:text-slate-500 italic">
-                      No hay {modalTab.toLowerCase()}s en esta carrera.
+                      No hay {modalTab.toLowerCase()}s en esta modalidad.
                     </div>
                   ) : (
                     modalUsers.map(u => (
@@ -307,11 +311,16 @@ const AdminCareers = () => {
                         <div>
                           <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{u.firstName} {u.lastName}</p>
                           <p className="text-xs text-slate-500 dark:text-slate-400">{u.dni} • {u.email}</p>
+                          {modalTab === 'DOCENTE' && Array.isArray(u.modalities) && u.modalities.length > 1 && (
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                              También en: {u.modalities.filter((m: string) => m !== selectedModality).map((m: string) => MODALITIES.find(x => x.id === m)?.name).join(', ')}
+                            </p>
+                          )}
                         </div>
                         <button
                           onClick={() => handleRemoveUser(u.id, `${u.firstName} ${u.lastName}`)}
                           className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                          title="Retirar de la carrera"
+                          title="Retirar de esta modalidad"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -321,14 +330,14 @@ const AdminCareers = () => {
                 </div>
               </div>
 
-              {/* Right Column: Add */}
+              {/* Right: add */}
               <div className="w-full md:w-1/2 flex flex-col bg-slate-50/50 dark:bg-slate-800/30">
                 <div className="p-6 border-b border-slate-100 dark:border-slate-700">
                   <h3 className="font-bold text-lg text-slate-800 dark:text-slate-50 mb-4 flex items-center gap-2">
                     <UserPlus className="text-istpet-blue dark:text-istpet-gold" size={20} />
                     Añadir {modalTab === 'ALUMNO' ? 'Alumno' : 'Docente'}
                   </h3>
-                  
+
                   <div className="flex bg-slate-200/50 dark:bg-slate-700/50 p-1 rounded-xl mb-6">
                     <button
                       onClick={() => setAddMode('EXISTING')}
@@ -346,7 +355,7 @@ const AdminCareers = () => {
 
                   {addMode === 'EXISTING' ? (
                     <div className="space-y-4">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">Selecciona un {modalTab.toLowerCase()} que no esté asignado a esta carrera.</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Selecciona un {modalTab.toLowerCase()} para añadirlo a esta modalidad de la carrera.</p>
                       <select
                         value={selectedExistingUserId}
                         onChange={e => setSelectedExistingUserId(e.target.value)}
@@ -362,13 +371,13 @@ const AdminCareers = () => {
                         disabled={!selectedExistingUserId}
                         className="w-full py-3 bg-istpet-blue hover:bg-istpet-blue-light dark:bg-istpet-gold dark:hover:bg-istpet-gold-light text-white dark:text-slate-900 font-bold rounded-xl flex justify-center items-center gap-2 transition-colors disabled:opacity-50"
                       >
-                        <Plus size={18} /> Asignar a Carrera
+                        <Plus size={18} /> Asignar a {MODALITIES.find(m => m.id === selectedModality)?.name}
                       </button>
                     </div>
                   ) : (
                     <form onSubmit={handleCreateNew} className="space-y-3 overflow-y-auto max-h-[50vh] pr-2 custom-scrollbar">
                       {formError && <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-xl border border-red-200 dark:border-red-800">{formError}</div>}
-                      
+
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nombres *</label>

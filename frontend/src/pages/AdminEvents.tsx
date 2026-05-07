@@ -3,7 +3,8 @@ import { fetchApi, API_URL } from '../lib/api';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Users, FileSpreadsheet, MapPin, CheckCircle, XCircle,
-  Map, QrCode, Layers, GraduationCap, Star, MessageSquare, X
+  Map, QrCode, Layers, GraduationCap, Star, MessageSquare, X,
+  Plus, Search, Filter, Calendar, Clock, Pencil, Trash2
 } from 'lucide-react';
 import LocationPicker from '../components/LocationPicker';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -17,19 +18,23 @@ const AdminEvents = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingEventId, setEditingEventId] = useState<number | null>(null);
 
-  // QR Modal — punto 5: contador en tiempo real
   const [showQrModal, setShowQrModal] = useState<number | null>(null);
   const [qrToken, setQrToken] = useState<string>('');
   const [qrAttendanceCount, setQrAttendanceCount] = useState<number>(0);
   const [qrRegistrationCount, setQrRegistrationCount] = useState<number>(0);
 
-  // Auditoría + encuestas — puntos 3 y 4
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [selectedEventTitle, setSelectedEventTitle] = useState<string>('');
   const [attendances, setAttendances] = useState<any[]>([]);
   const [surveys, setSurveys] = useState<any[]>([]);
   const [avgRating, setAvgRating] = useState<number>(0);
   const [auditTab, setAuditTab] = useState<'attendance' | 'surveys'>('attendance');
+
+  // Filtros estilo Eventos Institucionales
+  const [searchText, setSearchText] = useState('');
+  const [filterTime, setFilterTime] = useState<'ALL' | 'UPCOMING' | 'PAST'>('UPCOMING');
+  const [filterType, setFilterType] = useState<'ALL' | 'TRANSVERSAL' | 'SPECIFIC'>('ALL');
+  const [filterCareer, setFilterCareer] = useState<string>('ALL');
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isTeacher = user?.role === 'DOCENTE';
@@ -44,7 +49,6 @@ const AdminEvents = () => {
     loadCareers();
   }, []);
 
-  // QR dinámico + contador de asistencias en tiempo real
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     if (showQrModal) {
@@ -148,7 +152,6 @@ const AdminEvents = () => {
     setFormData({ title: '', description: '', startDate: '', endDate: '', capacity: '', hours: '', radiusMeters: 100, isTransversal: true, careers: [] });
   };
 
-  // Punto 3: abrir auditoría (ahora disponible para DOCENTE en backend)
   const openAudit = async (event: any) => {
     setSelectedEventId(event.id);
     setSelectedEventTitle(event.title);
@@ -163,7 +166,6 @@ const AdminEvents = () => {
     } catch (err: any) { alert(err.message); }
   };
 
-  // Punto 4: cargar encuestas del evento
   const loadSurveys = async (eventId: number) => {
     try {
       const data = await fetchApi(`/reports/surveys/${eventId}`);
@@ -187,41 +189,195 @@ const AdminEvents = () => {
     window.open(`${API_URL}/reports/excel/${selectedEventId}?token=${localStorage.getItem('token')}`, '_blank');
   };
 
-  // Helper estrellas
   const renderStars = (rating: number) =>
     Array.from({ length: 5 }, (_, i) => (
       <Star key={i} size={14} className={i < rating ? 'text-istpet-gold fill-istpet-gold' : 'text-slate-300 dark:text-slate-600'} />
     ));
 
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-8 w-full transition-colors duration-300" translate="no">
-      <div className="max-w-7xl mx-auto">
+  const isPast = (e: any) => new Date(e.endDate) < new Date();
 
+  const filteredEvents = events.filter(e => {
+    if (searchText && !e.title.toLowerCase().includes(searchText.toLowerCase()) && !(e.description || '').toLowerCase().includes(searchText.toLowerCase())) return false;
+    if (filterTime === 'UPCOMING' && isPast(e)) return false;
+    if (filterTime === 'PAST' && !isPast(e)) return false;
+    if (filterType === 'TRANSVERSAL' && !e.isTransversal) return false;
+    if (filterType === 'SPECIFIC' && e.isTransversal) return false;
+    if (filterCareer !== 'ALL' && !e.isTransversal && !(e.careers || []).some((c: any) => c.id.toString() === filterCareer)) return false;
+    return true;
+  });
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300" translate="no">
+      <div className="p-6 max-w-7xl mx-auto fade-in">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <Link to="/dashboard" className="flex items-center gap-2 px-4 py-2 shrink-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-istpet-blue dark:hover:text-istpet-gold transition-colors font-medium shadow-sm">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div className="flex items-center gap-4">
+            <Link to="/dashboard" className="hidden md:flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-istpet-blue dark:hover:text-istpet-gold transition-colors font-medium shadow-sm">
               <ArrowLeft size={18} /> Volver
             </Link>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-50">
+              <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-50">
                 {isTeacher ? 'Panel de Docente' : 'Administración de Eventos'}
               </h1>
               {isTeacher && <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Gestiona asistencias y proyecta QR para tus eventos</p>}
             </div>
           </div>
-          {!showForm && !selectedEventId && !isTeacher && (
-            <button onClick={() => setShowForm(true)} className="bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 px-6 py-2.5 rounded-xl font-bold hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light transition-colors w-full md:w-auto text-center">
-              Crear Nuevo Evento
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg">
+              {filteredEvents.length} evento{filteredEvents.length !== 1 ? 's' : ''}
+            </span>
+            {!isTeacher && (
+              <button onClick={() => setShowForm(true)} className="bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 px-4 py-2 rounded-xl font-bold hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light transition-colors flex items-center gap-2 text-sm">
+                <Plus size={16} /> Nuevo Evento
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Formulario (solo ADMIN/SECRETARIA) */}
-        {showForm && (
-          <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 mb-8 fade-in">
-            <h2 className="text-2xl font-bold mb-6 text-slate-800 dark:text-slate-50">{editingEventId ? 'Editar Evento' : 'Nuevo Evento'}</h2>
-            <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Filtros */}
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 mb-6 space-y-3">
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Buscar eventos..."
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold text-sm transition-colors"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <div className="flex items-center gap-1.5">
+              <Filter size={14} className="text-slate-400" />
+              <span className="text-xs text-slate-400 font-medium">Filtros:</span>
+            </div>
+
+            {(['ALL', 'UPCOMING', 'PAST'] as const).map(v => (
+              <button key={v} onClick={() => setFilterTime(v)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filterTime === v ? 'bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
+                {v === 'ALL' ? 'Todos' : v === 'UPCOMING' ? 'Próximos' : 'Pasados'}
+              </button>
+            ))}
+
+            <div className="w-px bg-slate-200 dark:bg-slate-600 self-stretch" />
+
+            {(['ALL', 'TRANSVERSAL', 'SPECIFIC'] as const).map(v => (
+              <button key={v} onClick={() => setFilterType(v)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${filterType === v ? 'bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
+                {v === 'TRANSVERSAL' && <Layers size={11} />}
+                {v === 'SPECIFIC' && <GraduationCap size={11} />}
+                {v === 'ALL' ? 'Todos los tipos' : v === 'TRANSVERSAL' ? 'General' : 'Por carrera'}
+              </button>
+            ))}
+
+            {careers.length > 0 && (
+              <select
+                value={filterCareer}
+                onChange={e => setFilterCareer(e.target.value)}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-none outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold transition-colors"
+              >
+                <option value="ALL">Todas las carreras</option>
+                {careers.map(c => <option key={c.id} value={c.id.toString()}>{c.name}</option>)}
+              </select>
+            )}
+          </div>
+        </div>
+
+        {/* Cards */}
+        {filteredEvents.length === 0 ? (
+          <div className="p-16 text-center text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700">
+            <Search size={40} className="mx-auto mb-3 opacity-40" />
+            <p className="font-medium">No se encontraron eventos con esos filtros.</p>
+            <button onClick={() => { setSearchText(''); setFilterTime('ALL'); setFilterType('ALL'); setFilterCareer('ALL'); }}
+              className="mt-3 text-sm text-istpet-blue dark:text-istpet-gold hover:underline">
+              Limpiar filtros
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredEvents.map(event => (
+              <div key={event.id} className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-xl dark:hover:shadow-slate-900/50 transition-all flex flex-col">
+                <div className={`h-32 p-6 flex flex-col justify-end border-b-2 relative ${
+                  isPast(event)
+                    ? 'bg-gradient-to-r from-slate-500 to-slate-600 dark:from-slate-700 dark:to-slate-800 border-slate-400/50'
+                    : 'bg-gradient-to-r from-istpet-blue to-istpet-blue-light dark:from-slate-700 dark:to-slate-800 border-istpet-gold/50'
+                }`}>
+                  <div className="absolute top-4 right-4 flex flex-col items-end gap-1">
+                    {isPast(event) && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-black/30 text-white/80 font-semibold flex items-center gap-1">
+                        <XCircle size={10} /> Finalizado
+                      </span>
+                    )}
+                    {event.isTransversal ? (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-istpet-gold/80 text-istpet-blue font-semibold flex items-center gap-1">
+                        <Layers size={10} /> General
+                      </span>
+                    ) : (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-white/20 text-white font-semibold flex items-center gap-1">
+                        <GraduationCap size={10} /> {event.careers?.length === 1 ? event.careers[0].name : `${event.careers?.length || 0} carreras`}
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-xl font-bold text-white leading-tight">{event.title}</h2>
+                </div>
+
+                <div className="p-6 space-y-4 flex-1 flex flex-col">
+                  <p className="text-slate-600 dark:text-slate-400 text-sm line-clamp-2 flex-1">{event.description}</p>
+
+                  <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                    <div className="flex items-center gap-2">
+                      <Calendar size={16} className="text-istpet-gold flex-shrink-0" />
+                      {new Date(event.startDate).toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock size={16} className="text-istpet-gold flex-shrink-0" />
+                      {event.hours} hora{event.hours !== 1 ? 's' : ''}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Users size={16} className="text-istpet-gold flex-shrink-0" />
+                      {event._count?.registrations ?? 0} inscritos · {event._count?.attendances ?? 0} asistencias
+                      {event.capacity && <span className="text-xs text-slate-400">/ {event.capacity} cupos</span>}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="pt-2 grid grid-cols-2 gap-2">
+                    <button onClick={() => setShowQrModal(event.id)} className="col-span-2 py-2.5 px-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-all bg-istpet-gold hover:bg-istpet-gold-dark text-istpet-blue text-sm">
+                      <QrCode size={16} /> Proyectar QR
+                    </button>
+                    <button onClick={() => openAudit(event)} className="py-2 px-3 rounded-xl font-medium flex justify-center items-center gap-2 transition-colors bg-istpet-blue/10 dark:bg-slate-700 text-istpet-blue dark:text-slate-300 hover:bg-istpet-blue/20 dark:hover:bg-slate-600 text-xs">
+                      <Users size={14} /> Asistencias
+                    </button>
+                    {!isTeacher ? (
+                      <button onClick={() => editEvent(event)} className="py-2 px-3 rounded-xl font-medium flex justify-center items-center gap-2 transition-colors bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 text-xs">
+                        <Pencil size={14} /> Editar
+                      </button>
+                    ) : (
+                      <div />
+                    )}
+                    {!isTeacher && (
+                      <button onClick={() => handleDelete(event.id)} className="col-span-2 py-2 px-3 rounded-xl font-medium flex justify-center items-center gap-2 transition-colors bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 text-xs">
+                        <Trash2 size={14} /> Eliminar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal: Form crear/editar */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800 z-10 rounded-t-3xl">
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-50">{editingEventId ? 'Editar Evento' : 'Nuevo Evento'}</h2>
+              <button onClick={closeForm} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"><X size={20} /></button>
+            </div>
+            <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8">
               <div>
                 <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Título</label>
                 <input required type="text" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
@@ -293,12 +449,13 @@ const AdminEvents = () => {
               </div>
             </form>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ── Auditoría (punto 3 + punto 4) ── */}
-        {selectedEventId ? (
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden fade-in">
-            {/* Header de auditoría */}
+      {/* Modal: Auditoría */}
+      {selectedEventId && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -317,13 +474,12 @@ const AdminEvents = () => {
                       <FileSpreadsheet size={16} /> Exportar Excel
                     </button>
                   )}
-                  <button onClick={() => setSelectedEventId(null)} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg font-medium transition-colors text-sm">
-                    Cerrar
+                  <button onClick={() => setSelectedEventId(null)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors">
+                    <X size={20} />
                   </button>
                 </div>
               </div>
 
-              {/* Tabs */}
               <div className="flex gap-1 mt-4 bg-slate-100 dark:bg-slate-700 p-1 rounded-xl w-fit">
                 <button
                   onClick={() => setAuditTab('attendance')}
@@ -342,178 +498,124 @@ const AdminEvents = () => {
               </div>
             </div>
 
-            {/* Tab: Asistencias */}
-            {auditTab === 'attendance' && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead className="bg-slate-50 dark:bg-slate-800/50">
-                    <tr>
-                      <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">Alumno</th>
-                      <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">CI / Doc.</th>
-                      <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">Carrera</th>
-                      <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">Entrada</th>
-                      <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">Salida</th>
-                      <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">GPS</th>
-                      <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">Estado</th>
-                      <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm text-center">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                    {attendances.map(att => (
-                      <tr key={att.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                        <td className="p-4 font-medium text-slate-800 dark:text-slate-100">{att.user.firstName} {att.user.lastName}</td>
-                        <td className="p-4 text-slate-600 dark:text-slate-300 text-sm">{att.user.dni}</td>
-                        <td className="p-4 text-sm text-slate-500 dark:text-slate-400">{att.user.career?.name || '—'}</td>
-                        <td className="p-4 text-sm text-slate-600 dark:text-slate-300">{new Date(att.recordedAt).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}</td>
-                        <td className="p-4 text-sm text-slate-600 dark:text-slate-300">
-                          {att.checkOutAt ? new Date(att.checkOutAt).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) : <span className="text-amber-500 text-xs">Pendiente</span>}
-                        </td>
-                        <td className="p-4 text-xs font-mono text-slate-500 dark:text-slate-400">
-                          <span className="flex items-center gap-1"><MapPin size={12} className="text-istpet-blue dark:text-istpet-gold" />{att.latitude.toFixed(4)}, {att.longitude.toFixed(4)}</span>
-                        </td>
-                        <td className="p-4">
-                          {att.isValid && att.checkOutAt && att.isCheckOutValid
-                            ? <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg text-xs font-bold w-fit"><CheckCircle size={13} /> Completo</span>
-                            : <span className="flex items-center gap-1 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-lg text-xs font-bold w-fit">
-                                <XCircle size={13} />
-                                {!att.isValid ? 'GPS inválido' : !att.checkOutAt ? 'Sin salida' : 'Salida inválida'}
-                              </span>
-                          }
-                        </td>
-                        <td className="p-4 text-center">
-                          <button
-                            onClick={() => validateManual(att.id, !(att.isValid && att.isCheckOutValid))}
-                            className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${(att.isValid && att.isCheckOutValid) ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-200' : 'bg-istpet-blue/10 dark:bg-istpet-gold/10 text-istpet-blue dark:text-istpet-gold hover:bg-istpet-blue/20'}`}
-                          >
-                            {(att.isValid && att.isCheckOutValid) ? 'Invalidar' : 'Aprobar manual'}
-                          </button>
-                        </td>
+            <div className="flex-1 overflow-y-auto">
+              {auditTab === 'attendance' && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-slate-50 dark:bg-slate-800/50">
+                      <tr>
+                        <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">Alumno</th>
+                        <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">CI / Doc.</th>
+                        <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">Carrera</th>
+                        <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">Entrada</th>
+                        <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">Salida</th>
+                        <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">GPS</th>
+                        <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm">Estado</th>
+                        <th className="p-4 font-medium text-slate-500 dark:text-slate-400 text-sm text-center">Acción</th>
                       </tr>
-                    ))}
-                    {attendances.length === 0 && (
-                      <tr><td colSpan={8} className="p-12 text-center text-slate-500 dark:text-slate-400">Nadie ha registrado asistencia aún.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* Tab: Encuestas (punto 4) */}
-            {auditTab === 'surveys' && (
-              <div className="p-6">
-                {surveys.length === 0 ? (
-                  <div className="p-12 text-center text-slate-500 dark:text-slate-400">
-                    <MessageSquare size={32} className="mx-auto mb-3 opacity-40" />
-                    <p>No hay encuestas respondidas aún.</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Resumen de calificación */}
-                    <div className="flex items-center gap-6 mb-6 p-5 bg-istpet-gold/5 dark:bg-istpet-gold/10 border border-istpet-gold/20 rounded-2xl">
-                      <div className="text-center">
-                        <div className="text-5xl font-extrabold text-istpet-gold">{avgRating}</div>
-                        <div className="flex gap-0.5 justify-center mt-1">{renderStars(Math.round(avgRating))}</div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">promedio</p>
-                      </div>
-                      <div className="flex-1 space-y-1.5">
-                        {[5, 4, 3, 2, 1].map(star => {
-                          const count = surveys.filter(s => s.rating === star).length;
-                          const pct = surveys.length > 0 ? (count / surveys.length) * 100 : 0;
-                          return (
-                            <div key={star} className="flex items-center gap-2 text-xs">
-                              <span className="w-3 text-slate-500 dark:text-slate-400 text-right">{star}</span>
-                              <Star size={11} className="text-istpet-gold fill-istpet-gold flex-shrink-0" />
-                              <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                <div className="h-full bg-istpet-gold rounded-full transition-all" style={{ width: `${pct}%` }} />
-                              </div>
-                              <span className="w-5 text-slate-500 dark:text-slate-400">{count}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div className="text-center">
-                        <div className="text-3xl font-extrabold text-slate-700 dark:text-slate-200">{surveys.length}</div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">respuestas</p>
-                      </div>
-                    </div>
-
-                    {/* Lista de respuestas */}
-                    <div className="space-y-3">
-                      {surveys.map((s: any) => (
-                        <div key={s.id} className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{s.user.firstName} {s.user.lastName}</span>
-                            <div className="flex gap-0.5">{renderStars(s.rating)}</div>
-                          </div>
-                          {s.feedback ? (
-                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">"{s.feedback}"</p>
-                          ) : (
-                            <p className="text-xs text-slate-400 dark:text-slate-500 italic">Sin comentario</p>
-                          )}
-                        </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                      {attendances.map(att => (
+                        <tr key={att.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                          <td className="p-4 font-medium text-slate-800 dark:text-slate-100">{att.user.firstName} {att.user.lastName}</td>
+                          <td className="p-4 text-slate-600 dark:text-slate-300 text-sm">{att.user.dni}</td>
+                          <td className="p-4 text-sm text-slate-500 dark:text-slate-400">{att.user.career?.name || '—'}</td>
+                          <td className="p-4 text-sm text-slate-600 dark:text-slate-300">{new Date(att.recordedAt).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}</td>
+                          <td className="p-4 text-sm text-slate-600 dark:text-slate-300">
+                            {att.checkOutAt ? new Date(att.checkOutAt).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) : <span className="text-amber-500 text-xs">Pendiente</span>}
+                          </td>
+                          <td className="p-4 text-xs font-mono text-slate-500 dark:text-slate-400">
+                            <span className="flex items-center gap-1"><MapPin size={12} className="text-istpet-blue dark:text-istpet-gold" />{att.latitude.toFixed(4)}, {att.longitude.toFixed(4)}</span>
+                          </td>
+                          <td className="p-4">
+                            {att.isValid && att.checkOutAt && att.isCheckOutValid
+                              ? <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg text-xs font-bold w-fit"><CheckCircle size={13} /> Completo</span>
+                              : <span className="flex items-center gap-1 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-lg text-xs font-bold w-fit">
+                                  <XCircle size={13} />
+                                  {!att.isValid ? 'GPS inválido' : !att.checkOutAt ? 'Sin salida' : 'Salida inválida'}
+                                </span>
+                            }
+                          </td>
+                          <td className="p-4 text-center">
+                            <button
+                              onClick={() => validateManual(att.id, !(att.isValid && att.isCheckOutValid))}
+                              className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${(att.isValid && att.isCheckOutValid) ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-200' : 'bg-istpet-blue/10 dark:bg-istpet-gold/10 text-istpet-blue dark:text-istpet-gold hover:bg-istpet-blue/20'}`}
+                            >
+                              {(att.isValid && att.isCheckOutValid) ? 'Invalidar' : 'Aprobar manual'}
+                            </button>
+                          </td>
+                        </tr>
                       ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-
-        ) : !showForm && (
-          /* ── Lista de eventos ── */
-          <div className="grid grid-cols-1 gap-4">
-            {events.map(event => (
-              <div key={event.id} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md dark:hover:shadow-slate-900 transition-shadow">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-50">{event.title}</h3>
-                    {event.isTransversal
-                      ? <span className="text-xs px-2 py-0.5 rounded-full bg-istpet-gold/20 text-istpet-blue dark:text-istpet-gold font-semibold flex items-center gap-1"><Layers size={11} /> General</span>
-                      : <span className="text-xs px-2 py-0.5 rounded-full bg-istpet-blue/10 dark:bg-slate-700 text-istpet-blue dark:text-slate-300 font-semibold flex items-center gap-1"><GraduationCap size={11} /> Específico</span>
-                    }
-                  </div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    {new Date(event.startDate).toLocaleDateString('es-EC')} · {event.hours} horas
-                    {!event.isTransversal && event.careers?.length > 0 && (
-                      <span className="ml-2 text-xs text-slate-400">({event.careers.map((c: any) => c.name).join(', ')})</span>
-                    )}
-                  </p>
-                  {/* Stats de asistencia */}
-                  <div className="flex items-center gap-3 mt-2">
-                    <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                      <Users size={12} /> {event._count?.registrations ?? 0} inscritos
-                    </span>
-                    <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                      <CheckCircle size={12} /> {event._count?.attendances ?? 0} asistencias
-                    </span>
-                  </div>
+                      {attendances.length === 0 && (
+                        <tr><td colSpan={8} className="p-12 text-center text-slate-500 dark:text-slate-400">Nadie ha registrado asistencia aún.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-                <div className="grid grid-cols-2 sm:flex sm:gap-2 sm:flex-wrap sm:justify-end flex-shrink-0 w-full sm:w-auto gap-2 mt-4 sm:mt-0">
-                  {!isTeacher && (
+              )}
+
+              {auditTab === 'surveys' && (
+                <div className="p-6">
+                  {surveys.length === 0 ? (
+                    <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+                      <MessageSquare size={32} className="mx-auto mb-3 opacity-40" />
+                      <p>No hay encuestas respondidas aún.</p>
+                    </div>
+                  ) : (
                     <>
-                      <button onClick={() => editEvent(event)} className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-sm flex items-center justify-center gap-2">Editar</button>
-                      <button onClick={() => handleDelete(event.id)} className="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors text-sm flex items-center justify-center gap-2">Eliminar</button>
+                      <div className="flex items-center gap-6 mb-6 p-5 bg-istpet-gold/5 dark:bg-istpet-gold/10 border border-istpet-gold/20 rounded-2xl">
+                        <div className="text-center">
+                          <div className="text-5xl font-extrabold text-istpet-gold">{avgRating}</div>
+                          <div className="flex gap-0.5 justify-center mt-1">{renderStars(Math.round(avgRating))}</div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">promedio</p>
+                        </div>
+                        <div className="flex-1 space-y-1.5">
+                          {[5, 4, 3, 2, 1].map(star => {
+                            const count = surveys.filter(s => s.rating === star).length;
+                            const pct = surveys.length > 0 ? (count / surveys.length) * 100 : 0;
+                            return (
+                              <div key={star} className="flex items-center gap-2 text-xs">
+                                <span className="w-3 text-slate-500 dark:text-slate-400 text-right">{star}</span>
+                                <Star size={11} className="text-istpet-gold fill-istpet-gold flex-shrink-0" />
+                                <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                  <div className="h-full bg-istpet-gold rounded-full transition-all" style={{ width: `${pct}%` }} />
+                                </div>
+                                <span className="w-5 text-slate-500 dark:text-slate-400">{count}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="text-center">
+                          <div className="text-3xl font-extrabold text-slate-700 dark:text-slate-200">{surveys.length}</div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">respuestas</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        {surveys.map((s: any) => (
+                          <div key={s.id} className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{s.user.firstName} {s.user.lastName}</span>
+                              <div className="flex gap-0.5">{renderStars(s.rating)}</div>
+                            </div>
+                            {s.feedback ? (
+                              <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">"{s.feedback}"</p>
+                            ) : (
+                              <p className="text-xs text-slate-400 dark:text-slate-500 italic">Sin comentario</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </>
                   )}
-                  <button onClick={() => setShowQrModal(event.id)} className="px-5 py-2 bg-istpet-gold/20 dark:bg-istpet-gold/10 text-istpet-blue dark:text-istpet-gold font-medium rounded-xl hover:bg-istpet-gold/40 dark:hover:bg-istpet-gold/20 transition-colors flex items-center justify-center gap-2 text-sm">
-                    <QrCode size={16} /> QR
-                  </button>
-                  <button onClick={() => openAudit(event)} className="px-5 py-2 bg-istpet-blue/10 dark:bg-slate-700 text-istpet-blue dark:text-slate-300 font-medium rounded-xl hover:bg-istpet-blue/20 dark:hover:bg-slate-600 transition-colors flex items-center justify-center gap-2 text-sm">
-                    <Users size={16} /> Asistencias
-                  </button>
                 </div>
-              </div>
-            ))}
-            {events.length === 0 && (
-              <div className="p-12 text-center text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700">
-                No hay eventos creados aún.
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* ── Modal QR con contador (punto 5) ── */}
+      {/* Modal QR */}
       {showQrModal && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-2xl w-full text-center relative shadow-2xl border border-slate-100 dark:border-slate-700">
@@ -524,7 +626,6 @@ const AdminEvents = () => {
             <h2 className="text-3xl font-bold text-istpet-blue dark:text-istpet-gold mb-2">Registro de Asistencia</h2>
             <p className="text-slate-500 dark:text-slate-400 mb-6">Escanea este código QR para registrar tu entrada o salida.</p>
 
-            {/* QR Code */}
             <div className="flex justify-center p-6 bg-slate-50 dark:bg-slate-700 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-600 mb-6">
               {qrToken
                 ? <QRCodeCanvas value={qrToken} size={280} level="H" includeMargin bgColor="transparent" fgColor="currentColor" className="text-slate-900 dark:text-white" />
@@ -532,7 +633,6 @@ const AdminEvents = () => {
               }
             </div>
 
-            {/* Contador de asistencias en tiempo real */}
             <div className="flex items-center justify-center gap-8 mb-5 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-100 dark:border-slate-700">
               <div className="text-center">
                 <div className="text-4xl font-extrabold text-istpet-blue dark:text-istpet-gold">{qrAttendanceCount}</div>
