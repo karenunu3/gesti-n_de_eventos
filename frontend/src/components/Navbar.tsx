@@ -42,7 +42,8 @@ const Navbar = () => {
 
   const navLinks = [
     { to: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={15} />, show: true },
-    { to: '/events', label: t('events.title'), icon: <Calendar size={15} />, show: true },
+    // "Eventos Institucionales" solo visible para alumnos — los admins gestionan eventos vía Admin → Eventos
+    { to: '/events', label: t('events.title'), icon: <Calendar size={15} />, show: user?.role === 'ALUMNO' },
   ];
 
   const adminSubLinks = [

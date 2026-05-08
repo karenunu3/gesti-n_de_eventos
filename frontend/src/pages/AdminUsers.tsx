@@ -479,7 +479,7 @@ const AdminUsers = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Correo *</label>
-                <input required type="email" className={inputClass} placeholder="usuario@gmail.com" value={form.email} onChange={e => set('email', e.target.value)} />
+                <input required type="email" className={inputClass} placeholder="usuario@istpet.edu.ec" value={form.email} onChange={e => set('email', e.target.value)} />
               </div>
 
               {/* Documento */}

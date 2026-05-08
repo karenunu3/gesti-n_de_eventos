@@ -28,13 +28,17 @@ export function validateDocument(type: 'CI' | 'PASAPORTE', value: string): strin
   return type === 'CI' ? validateCI(value) : validatePassport(value);
 }
 
-// Email validation: formato estándar RFC 5322 simplificado, dominio con TLD de 2+ chars
+// Email validation: formato estándar + dominio institucional obligatorio
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+const ISTPET_DOMAIN = '@istpet.edu.ec';
 
 export function validateEmail(email: string): string | null {
   if (!email) return 'El correo es obligatorio.';
   if (email.length > 254) return 'El correo es demasiado largo.';
-  if (!EMAIL_RE.test(email)) return 'Formato de correo inválido (ej. usuario@gmail.com).';
+  if (!EMAIL_RE.test(email)) return 'Formato de correo inválido.';
+  if (!email.toLowerCase().endsWith(ISTPET_DOMAIN)) {
+    return `Solo se permiten correos institucionales (${ISTPET_DOMAIN}).`;
+  }
   return null;
 }
 

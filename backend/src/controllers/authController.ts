@@ -4,10 +4,18 @@ import crypto from 'crypto';
 import prisma from '../prismaClient';
 import { generateToken } from '../utils/jwt';
 import { sendMail } from '../utils/mailer';
+import { validateInstitutionalEmail, sendWelcomeEmail } from '../utils/emails';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, firstName, lastName, dni, role, careerId, semester, modalities } = req.body;
+
+    // Validar correo institucional
+    const emailErr = validateInstitutionalEmail(email);
+    if (emailErr) {
+      res.status(400).json({ message: emailErr });
+      return;
+    }
 
     const existingUser = await prisma.user.findFirst({
       where: { OR: [{ email }, { dni }] }
@@ -38,6 +46,16 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     });
 
     const token = generateToken(newUser.id, newUser.role, sessionToken);
+
+    // Correo de bienvenida (no bloquea la respuesta)
+    sendWelcomeEmail({
+      to: newUser.email,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      role: newUser.role,
+      createdByAdmin: false,
+    }).catch(() => {});
+
     res.status(201).json({ user: { id: newUser.id, email: newUser.email, role: newUser.role, firstName: newUser.firstName }, token });
   } catch (error: any) {
     res.status(500).json({ message: 'Error en el registro', error: error.message });

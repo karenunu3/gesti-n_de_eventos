@@ -3,6 +3,21 @@ import prisma from '../prismaClient';
 import { generateToken } from '../utils/jwt';
 import jwt from 'jsonwebtoken';
 
+/** Detecta si dos rangos de fechas se traslapan (excluyendo eventId si se pasa, para update). */
+const findOverlappingEvent = async (start: Date, end: Date, excludeId?: number) => {
+  return prisma.event.findFirst({
+    where: {
+      ...(excludeId ? { NOT: { id: excludeId } } : {}),
+      // Hay traslape si: existingStart < newEnd AND existingEnd > newStart
+      AND: [
+        { startDate: { lt: end } },
+        { endDate: { gt: start } },
+      ],
+    },
+    select: { id: true, title: true, startDate: true, endDate: true },
+  });
+};
+
 export const createEvent = async (req: any, res: Response): Promise<void> => {
   try {
     const { title, description, startDate, endDate, capacity, hours, latitude, longitude, radiusMeters, isTransversal, careers } = req.body;
@@ -33,6 +48,16 @@ export const createEvent = async (req: any, res: Response): Promise<void> => {
     // 4. Validar capacidad (si se proporciona, debe ser > 0)
     if (capacity !== null && capacity !== undefined && capacity <= 0) {
       res.status(400).json({ message: 'La capacidad debe ser mayor a 0' });
+      return;
+    }
+
+    // 5. Validar que no se cruce con otro evento en el mismo rango horario
+    const overlap = await findOverlappingEvent(startDateObj, endDateObj);
+    if (overlap) {
+      const fmt = (d: Date) => new Date(d).toLocaleString('es-EC', { timeZone: 'America/Guayaquil', dateStyle: 'short', timeStyle: 'short' });
+      res.status(409).json({
+        message: `Conflicto de horario: ya existe el evento "${overlap.title}" programado de ${fmt(overlap.startDate)} a ${fmt(overlap.endDate)}.`
+      });
       return;
     }
 
@@ -96,6 +121,16 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
 
     const eventId = parseInt(id as string);
 
+    // 5. Validar que no se cruce con otro evento (excluyendo este mismo)
+    const overlap = await findOverlappingEvent(startDateObj, endDateObj, eventId);
+    if (overlap) {
+      const fmt = (d: Date) => new Date(d).toLocaleString('es-EC', { timeZone: 'America/Guayaquil', dateStyle: 'short', timeStyle: 'short' });
+      res.status(409).json({
+        message: `Conflicto de horario: ya existe el evento "${overlap.title}" programado de ${fmt(overlap.startDate)} a ${fmt(overlap.endDate)}.`
+      });
+      return;
+    }
+
     const event = await prisma.event.update({
       where: { id: eventId },
       data: {
@@ -132,11 +167,29 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
 
 export const deleteEvent = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
-    await prisma.event.delete({ where: { id: parseInt(id as string) } });
+    const eventId = parseInt(req.params.id as string);
+    if (Number.isNaN(eventId)) {
+      res.status(400).json({ message: 'ID de evento inválido' });
+      return;
+    }
+
+    // Eliminar todos los registros dependientes en una transacción
+    // (las relaciones del schema no tienen onDelete: Cascade configurado)
+    await prisma.$transaction([
+      prisma.survey.deleteMany({ where: { eventId } }),
+      prisma.certificate.deleteMany({ where: { eventId } }),
+      prisma.eventAttendance.deleteMany({ where: { eventId } }),
+      prisma.eventRegistration.deleteMany({ where: { eventId } }),
+      prisma.event.delete({ where: { id: eventId } }),
+    ]);
+
     res.status(200).json({ message: 'Evento eliminado correctamente' });
   } catch (error: any) {
-    res.status(500).json({ message: 'Error al eliminar el evento', error: error.message });
+    if (error.code === 'P2025') {
+      res.status(404).json({ message: 'Evento no encontrado' });
+    } else {
+      res.status(500).json({ message: 'Error al eliminar el evento', error: error.message });
+    }
   }
 };
 

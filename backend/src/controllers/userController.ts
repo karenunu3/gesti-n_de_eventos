@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../prismaClient';
+import { validateInstitutionalEmail, sendWelcomeEmail } from '../utils/emails';
 
 export const getUsers = async (req: any, res: any): Promise<void> => {
   try {
@@ -33,6 +34,13 @@ export const createUser = async (req: any, res: any): Promise<void> => {
       return;
     }
 
+    // Validar correo institucional
+    const emailErr = validateInstitutionalEmail(email);
+    if (emailErr) {
+      res.status(400).json({ message: emailErr });
+      return;
+    }
+
     const existing = await prisma.user.findFirst({
       where: { OR: [{ email }, { dni }] }
     });
@@ -60,6 +68,16 @@ export const createUser = async (req: any, res: any): Promise<void> => {
       },
       select: { id: true, email: true, firstName: true, lastName: true, dni: true, role: true, career: true, modalities: true, createdAt: true }
     });
+
+    // Correo de bienvenida (admin creó la cuenta — incluir contraseña temporal)
+    sendWelcomeEmail({
+      to: newUser.email,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      role: newUser.role,
+      createdByAdmin: true,
+      tempPassword: password,
+    }).catch(() => {});
 
     res.status(201).json(newUser);
   } catch (error: any) {

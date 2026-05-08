@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import LiveIndicator from '../components/LiveIndicator';
+import Countdown from '../components/Countdown';
+import { fmtDate, fmtTime } from '../lib/dates';
 
 const Events = () => {
   const { t } = useTranslation();
@@ -19,6 +21,7 @@ const Events = () => {
 
   // QR Scanner & Location state
   const [location, setLocation] = useState<{lat: number, lng: number} | null>(null);
+  const locationRef = useRef<{lat: number, lng: number} | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
   // Survey state
@@ -98,41 +101,85 @@ const Events = () => {
     }
   };
 
-  const startAttendance = async (eventId: number) => {
+  const [scannerStatus, setScannerStatus] = useState<'idle' | 'requesting-gps' | 'starting-camera' | 'ready' | 'error'>('idle');
+
+  const startAttendance = (eventId: number) => {
     setAttendanceEventId(eventId);
     setMessage(null);
+    setLocation(null);
+    setScannerStatus('requesting-gps');
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          setTimeout(() => {
-            if (!scannerRef.current) {
-              const scanner = new Html5Qrcode("qr-reader");
-              scannerRef.current = scanner;
-              scanner.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                (decodedText) => {
-                  scanner.stop().catch(console.error);
-                  scannerRef.current = null;
-                  submitAttendance(eventId, pos.coords.latitude, pos.coords.longitude, decodedText);
-                },
-                undefined
-              ).catch(() => {
-                scannerRef.current = null;
-                setMessage({ text: 'No se pudo acceder a la cámara. Verifica los permisos del navegador.', type: 'error' });
-                setAttendanceEventId(null);
-              });
-            }
-          }, 100);
-        },
-        () => setMessage({ text: 'Error obteniendo ubicación. Necesario para asistencia.', type: 'error' })
-      );
-    } else {
+    // Pedir GPS en paralelo (no bloquea el render del modal)
+    if (!navigator.geolocation) {
+      setScannerStatus('error');
       setMessage({ text: 'Tu navegador no soporta geolocalización', type: 'error' });
+      return;
     }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        locationRef.current = loc;
+        setLocation(loc);
+      },
+      () => {
+        setScannerStatus('error');
+        setMessage({ text: 'Error obteniendo ubicación. Necesario para asistencia.', type: 'error' });
+        setAttendanceEventId(null);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
+
+  // Inicializa la cámara cuando el modal está montado y el div #qr-reader existe (sin setTimeout frágil)
+  useEffect(() => {
+    if (!attendanceEventId || scannerRef.current) return;
+
+    let cancelled = false;
+    const initCamera = async () => {
+      const el = document.getElementById('qr-reader');
+      if (!el) {
+        // Reintentar en el próximo frame si el DOM aún no está listo
+        requestAnimationFrame(initCamera);
+        return;
+      }
+      setScannerStatus('starting-camera');
+      try {
+        const scanner = new Html5Qrcode('qr-reader', { verbose: false });
+        scannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+          (decodedText) => {
+            scanner.stop().catch(() => {});
+            scannerRef.current = null;
+            const loc = locationRef.current;
+            if (loc) {
+              submitAttendance(attendanceEventId, loc.lat, loc.lng, decodedText);
+            } else {
+              setMessage({ text: 'Esperando GPS — intenta nuevamente en unos segundos.', type: 'error' });
+              setAttendanceEventId(null);
+            }
+          },
+          undefined
+        );
+        if (!cancelled) setScannerStatus('ready');
+      } catch (err: any) {
+        if (cancelled) return;
+        scannerRef.current = null;
+        setScannerStatus('error');
+        const msg = err?.message?.includes('NotAllowed') || err?.name === 'NotAllowedError'
+          ? 'Permiso de cámara denegado. Habilítalo en los ajustes del navegador.'
+          : err?.message?.includes('NotFound')
+          ? 'No se encontró cámara en este dispositivo.'
+          : 'No se pudo iniciar la cámara. Cierra y vuelve a abrir.';
+        setMessage({ text: msg, type: 'error' });
+      }
+    };
+
+    initCamera();
+    return () => { cancelled = true; };
+  }, [attendanceEventId]);
 
   const startCheckOut = async (eventId: number) => {
     setMessage(null);
@@ -150,11 +197,13 @@ const Events = () => {
 
   const cancelAttendance = () => {
     if (scannerRef.current) {
-      scannerRef.current.stop().catch(console.error);
+      scannerRef.current.stop().catch(() => {});
       scannerRef.current = null;
     }
     setAttendanceEventId(null);
     setLocation(null);
+    locationRef.current = null;
+    setScannerStatus('idle');
   };
 
   const submitAttendance = async (eventId: number, lat: number, lng: number, qrToken: string) => {
@@ -375,6 +424,19 @@ const Events = () => {
                 className="absolute inset-0 [&_video]:!object-cover [&_video]:!w-full [&_video]:!h-full [&_img]:!hidden [&_#qr-reader__dashboard]:!hidden [&_button]:!hidden [&_select]:!hidden"
               />
 
+              {/* Loader sobre la cámara mientras inicia */}
+              {scannerStatus !== 'ready' && (
+                <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center z-10">
+                  <div className="w-12 h-12 border-4 border-istpet-gold border-t-transparent rounded-full animate-spin mb-4" />
+                  <p className="text-white text-sm font-medium">
+                    {scannerStatus === 'requesting-gps' && 'Obteniendo ubicación GPS...'}
+                    {scannerStatus === 'starting-camera' && 'Iniciando cámara...'}
+                    {scannerStatus === 'idle' && 'Preparando...'}
+                    {scannerStatus === 'error' && 'Error — cierra y reintenta'}
+                  </p>
+                </div>
+              )}
+
               {/* Overlay oscuro — 4 paneles alrededor de la ventana de escaneo */}
               <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
                 {/* Sombra top */}
@@ -520,7 +582,7 @@ const Events = () => {
                   <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
                     <div className="flex items-center gap-2">
                       <Calendar size={16} className="text-istpet-gold flex-shrink-0" />
-                      {new Date(event.startDate).toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      {fmtDate(event.startDate)} · {fmtTime(event.startDate)}
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock size={16} className="text-istpet-gold flex-shrink-0" />
@@ -532,6 +594,7 @@ const Events = () => {
                         Cupos: {event._count?.registrations || 0} / {event.capacity}
                       </div>
                     )}
+                    <Countdown startDate={event.startDate} endDate={event.endDate} />
                   </div>
 
                   {user?.role === 'ALUMNO' && (

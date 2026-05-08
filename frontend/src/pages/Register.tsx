@@ -217,7 +217,7 @@ const Register = () => {
                     required
                     type="email"
                     className={`${inputClass} ${emailError ? 'border-red-500/70 focus:ring-red-500' : ''}`}
-                    placeholder="usuario@gmail.com"
+                    placeholder="usuario@istpet.edu.ec"
                     value={form.email}
                     onChange={e => {
                       const v = e.target.value;

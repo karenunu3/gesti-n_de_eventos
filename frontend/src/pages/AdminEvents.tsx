@@ -10,6 +10,8 @@ import LocationPicker from '../components/LocationPicker';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import LiveIndicator from '../components/LiveIndicator';
+import Countdown from '../components/Countdown';
+import { fmtDate, fmtTime } from '../lib/dates';
 
 const ISTPET_LAT = -0.2824216;
 const ISTPET_LNG = -78.5555266;
@@ -363,7 +365,7 @@ const AdminEvents = () => {
                   <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
                     <div className="flex items-center gap-2">
                       <Calendar size={16} className="text-istpet-gold flex-shrink-0" />
-                      {new Date(event.startDate).toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      {fmtDate(event.startDate)} · {fmtTime(event.startDate)}
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock size={16} className="text-istpet-gold flex-shrink-0" />
@@ -374,6 +376,7 @@ const AdminEvents = () => {
                       {event._count?.registrations ?? 0} inscritos · {event._count?.attendances ?? 0} asistencias
                       {event.capacity && <span className="text-xs text-slate-400">/ {event.capacity} cupos</span>}
                     </div>
+                    <Countdown startDate={event.startDate} endDate={event.endDate} />
                   </div>
 
                   {/* Actions */}

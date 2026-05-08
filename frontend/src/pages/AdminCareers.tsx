@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, GraduationCap, MapPin, Laptop, MonitorPlay, Building2, BookOpen, Settings, X, Plus, Trash2, UserPlus, CreditCard, KeySquare, User, Mail, Eye, EyeOff, Check } from 'lucide-react';
+import { ArrowLeft, GraduationCap, MapPin, Laptop, MonitorPlay, Building2, BookOpen, Settings, X, Plus, Trash2, UserPlus, CreditCard, KeySquare, User, Mail, Eye, EyeOff, Check, FolderPlus } from 'lucide-react';
 import { validateDocument, validateEmail, getPasswordStrength } from '../lib/validators';
 import type { PasswordStrength } from '../lib/validators';
 import { MODALITIES, userInModality } from '../lib/modalities';
@@ -63,6 +63,13 @@ const AdminCareers = () => {
   // Modal: career + modality context (which card was clicked)
   const [selectedCareer, setSelectedCareer] = useState<any>(null);
   const [selectedModality, setSelectedModality] = useState<ModalityId | null>(null);
+
+  // Modal "Crear Nueva Carrera"
+  const [showNewCareerModal, setShowNewCareerModal] = useState(false);
+  const [newCareerName, setNewCareerName] = useState('');
+  const [newCareerModality, setNewCareerModality] = useState<ModalityId | ''>('');
+  const [newCareerError, setNewCareerError] = useState('');
+  const [newCareerLoading, setNewCareerLoading] = useState(false);
   const [modalTab, setModalTab] = useState<'ALUMNO' | 'DOCENTE'>('ALUMNO');
   const [addMode, setAddMode] = useState<'EXISTING' | 'NEW'>('EXISTING');
 
@@ -135,6 +142,36 @@ const AdminCareers = () => {
   const closeModal = () => {
     setSelectedCareer(null);
     setSelectedModality(null);
+  };
+
+  const handleCreateCareer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNewCareerError('');
+    const name = newCareerName.trim();
+    if (!name) { setNewCareerError('El nombre de la carrera es obligatorio.'); return; }
+    if (!newCareerModality) { setNewCareerError('Selecciona la modalidad de la carrera.'); return; }
+    if (careers.some((c: any) => c.name.toLowerCase() === name.toLowerCase())) {
+      setNewCareerError('Ya existe una carrera con ese nombre.');
+      return;
+    }
+
+    setNewCareerLoading(true);
+    try {
+      // 1. Crear carrera en BD
+      await fetchApi('/careers', { method: 'POST', body: JSON.stringify({ name }) });
+      // 2. Añadir el nombre a la modalidad seleccionada en MODALITIES (en memoria — persiste mientras la sesión)
+      const mod = MODALITIES.find(m => m.id === newCareerModality);
+      if (mod && !mod.careerNames.includes(name)) mod.careerNames.push(name);
+      // 3. Recargar y cerrar
+      await loadData();
+      setShowNewCareerModal(false);
+      setNewCareerName('');
+      setNewCareerModality('');
+    } catch (err: any) {
+      setNewCareerError(err.message || 'Error al crear la carrera');
+    } finally {
+      setNewCareerLoading(false);
+    }
   };
 
   const handleAssignExisting = async () => {
@@ -234,7 +271,15 @@ const AdminCareers = () => {
             <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-50">Gestión de Carreras</h1>
             <p className="text-slate-500 dark:text-slate-400 mt-1">Administra el alumnado y personal de cada modalidad.</p>
           </div>
-          <LiveIndicator isRefreshing={refresh.isRefreshing} lastRefreshAt={refresh.lastRefreshAt} onRefresh={refresh.refreshNow} />
+          <div className="flex items-center gap-3">
+            <LiveIndicator isRefreshing={refresh.isRefreshing} lastRefreshAt={refresh.lastRefreshAt} onRefresh={refresh.refreshNow} />
+            <button
+              onClick={() => { setShowNewCareerModal(true); setNewCareerError(''); setNewCareerName(''); setNewCareerModality(''); }}
+              className="flex items-center gap-2 px-4 py-2 bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 rounded-xl font-bold hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light transition-colors text-sm"
+            >
+              <FolderPlus size={16} /> Crear Nueva Carrera
+            </button>
+          </div>
         </div>
 
         {/* Modalidades Grid */}
@@ -290,6 +335,75 @@ const AdminCareers = () => {
           ))}
         </div>
       </div>
+
+      {/* MODAL: Crear Nueva Carrera */}
+      {showNewCareerModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-700">
+              <h2 className="text-xl font-bold text-istpet-blue dark:text-istpet-gold flex items-center gap-2">
+                <FolderPlus size={22} /> Nueva Carrera
+              </h2>
+              <button
+                onClick={() => setShowNewCareerModal(false)}
+                aria-label="Cerrar"
+                className="flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-white hover:bg-red-500 dark:hover:bg-red-600 transition-colors"
+              >
+                <X size={22} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateCareer} className="p-6 space-y-4">
+              {newCareerError && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-xl border border-red-200 dark:border-red-800">
+                  {newCareerError}
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nombre de la carrera *</label>
+                <input
+                  required
+                  type="text"
+                  value={newCareerName}
+                  onChange={e => setNewCareerName(e.target.value)}
+                  className={inputClass}
+                  placeholder="ej. Tecnología en Software"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Modalidad *</label>
+                <select
+                  required
+                  value={newCareerModality}
+                  onChange={e => setNewCareerModality(e.target.value as ModalityId | '')}
+                  className={inputClass}
+                >
+                  <option value="">Selecciona una modalidad</option>
+                  {MODALITIES.map(m => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowNewCareerModal(false)}
+                  className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-medium transition-colors text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={newCareerLoading}
+                  className="flex-1 py-2.5 bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 rounded-xl font-bold hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light transition-colors disabled:opacity-60 text-sm"
+                >
+                  {newCareerLoading ? 'Creando...' : 'Crear Carrera'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* MODAL CRUD */}
       {selectedCareer && selectedModality && (
@@ -428,7 +542,7 @@ const AdminCareers = () => {
                         <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Correo *</label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                          <input required type="email" className={`${inputClass} pl-9`} placeholder="correo@gmail.com" value={form.email} onChange={e => setF('email', e.target.value)} />
+                          <input required type="email" className={`${inputClass} pl-9`} placeholder="correo@istpet.edu.ec" value={form.email} onChange={e => setF('email', e.target.value)} />
                         </div>
                       </div>
 
