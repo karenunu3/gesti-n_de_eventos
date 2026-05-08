@@ -39,8 +39,9 @@ export const createEvent = async (req: any, res: Response): Promise<void> => {
       return;
     }
 
-    // 3. Validar que no sea en el pasado
-    if (startDateObj < now) {
+    // 3. Validar que no sea en el pasado (con 5 min de gracia para que "ahora" sea válido)
+    const grace = new Date(now.getTime() - 5 * 60 * 1000);
+    if (startDateObj < grace) {
       res.status(400).json({ message: 'El evento no puede programarse en una fecha pasada' });
       return;
     }
@@ -90,10 +91,10 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
     const { id } = req.params;
     const { title, description, startDate, endDate, capacity, hours, latitude, longitude, radiusMeters, isTransversal, careers } = req.body;
 
-    // Validaciones de duración
+    // Validaciones de duración (en update SÍ se permiten fechas pasadas:
+    // un admin puede necesitar corregir un evento ya transcurrido)
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
-    const now = new Date();
 
     // 1. Validar que startDate < endDate
     if (startDateObj >= endDateObj) {
@@ -107,13 +108,7 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // 3. Validar que no sea en el pasado
-    if (startDateObj < now) {
-      res.status(400).json({ message: 'El evento no puede programarse en una fecha pasada' });
-      return;
-    }
-
-    // 4. Validar capacidad (si se proporciona, debe ser > 0)
+    // 3. Validar capacidad (si se proporciona, debe ser > 0)
     if (capacity !== null && capacity !== undefined && capacity <= 0) {
       res.status(400).json({ message: 'La capacidad debe ser mayor a 0' });
       return;
