@@ -91,8 +91,21 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
     const { id } = req.params;
     const { title, description, startDate, endDate, capacity, hours, latitude, longitude, radiusMeters, isTransversal, careers } = req.body;
 
-    // Validaciones de duración (en update SÍ se permiten fechas pasadas:
-    // un admin puede necesitar corregir un evento ya transcurrido)
+    // Bloquear edición si el evento ORIGINAL ya finalizó antes del inicio de hoy
+    const eventIdNum = parseInt(id as string);
+    const existing = await prisma.event.findUnique({ where: { id: eventIdNum }, select: { endDate: true } });
+    if (!existing) {
+      res.status(404).json({ message: 'Evento no encontrado' });
+      return;
+    }
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    if (existing.endDate < startOfToday) {
+      res.status(400).json({ message: 'Este evento ya finalizó. Solo se puede editar hasta el día en que se realizó.' });
+      return;
+    }
+
+    // Validaciones de duración
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
 
@@ -114,10 +127,8 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    const eventId = parseInt(id as string);
-
     // 5. Validar que no se cruce con otro evento (excluyendo este mismo)
-    const overlap = await findOverlappingEvent(startDateObj, endDateObj, eventId);
+    const overlap = await findOverlappingEvent(startDateObj, endDateObj, eventIdNum);
     if (overlap) {
       const fmt = (d: Date) => new Date(d).toLocaleString('es-EC', { timeZone: 'America/Guayaquil', dateStyle: 'short', timeStyle: 'short' });
       res.status(409).json({
@@ -127,7 +138,7 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
     }
 
     const event = await prisma.event.update({
-      where: { id: eventId },
+      where: { id: eventIdNum },
       data: {
         title, description, capacity, hours, latitude, longitude, radiusMeters, isTransversal,
         startDate: startDateObj,
@@ -143,7 +154,7 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
     if (!isTransversal) {
       const allowedCareerIds = event.careers.map(c => c.id);
       const registrations = await prisma.eventRegistration.findMany({
-        where: { eventId },
+        where: { eventId: eventIdNum },
         include: { user: { select: { id: true, role: true, careerId: true } } }
       });
       const toRemove = registrations

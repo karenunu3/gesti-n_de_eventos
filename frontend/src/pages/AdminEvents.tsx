@@ -11,7 +11,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import LiveIndicator from '../components/LiveIndicator';
 import Countdown from '../components/Countdown';
-import { fmtDate, fmtTime } from '../lib/dates';
+import { fmtDate, fmtTime, toDateTimeLocalInput, isBeforeToday } from '../lib/dates';
 
 const ISTPET_LAT = -0.2824216;
 const ISTPET_LNG = -78.5555266;
@@ -152,11 +152,17 @@ const AdminEvents = () => {
   };
 
   const editEvent = (event: any) => {
+    // Bloquear edición si el evento ya terminó antes de hoy
+    if (isBeforeToday(event.endDate)) {
+      alert('Este evento ya finalizó. No se permite editarlo después del día en que se realizó.');
+      return;
+    }
     setFormData({
       title: event.title,
       description: event.description,
-      startDate: new Date(event.startDate).toISOString().slice(0, 16),
-      endDate: new Date(event.endDate).toISOString().slice(0, 16),
+      // Usar helper que convierte UTC → hora local correcta para el input
+      startDate: toDateTimeLocalInput(event.startDate),
+      endDate: toDateTimeLocalInput(event.endDate),
       capacity: event.capacity ? event.capacity.toString() : '',
       hours: event.hours.toString(),
       radiusMeters: event.radiusMeters,

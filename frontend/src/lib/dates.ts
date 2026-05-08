@@ -34,3 +34,23 @@ export function humanCountdown(target: Date | string): string | null {
   if (t.minutes > 0) return `${t.minutes}m ${t.seconds.toString().padStart(2, '0')}s`;
   return `${t.seconds}s`;
 }
+
+/**
+ * Convierte un Date/ISO en el string que necesita un <input type="datetime-local"> mostrando
+ * la hora en la zona horaria local del usuario (no UTC). Resuelve el bug clásico de
+ * `toISOString().slice(0, 16)` que devolvía UTC y desplazaba la hora visible.
+ */
+export function toDateTimeLocalInput(d: Date | string): string {
+  const date = new Date(d);
+  const tzOffsetMs = date.getTimezoneOffset() * 60000; // minutos → ms (es positivo si local < UTC)
+  const local = new Date(date.getTime() - tzOffsetMs);
+  return local.toISOString().slice(0, 16);
+}
+
+/** ¿La fecha cae en un día anterior al actual (zona local)? */
+export function isBeforeToday(d: Date | string): boolean {
+  const target = new Date(d);
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  return target < startOfToday;
+}
