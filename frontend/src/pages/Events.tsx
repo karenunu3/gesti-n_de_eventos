@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import LiveIndicator from '../components/LiveIndicator';
 import Countdown from '../components/Countdown';
+import Toast from '../components/Toast';
 import { fmtDate, fmtTime } from '../lib/dates';
 
 const Events = () => {
@@ -334,12 +335,9 @@ const Events = () => {
           </div>
         </div>
 
-        {/* Mensaje global */}
+        {/* Toast flotante — siempre visible sin importar el scroll */}
         {message && (
-          <div className={`mb-4 p-4 rounded-xl flex items-center gap-3 ${message.type === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800' : 'bg-istpet-blue/10 dark:bg-istpet-gold/10 text-istpet-blue dark:text-istpet-gold border border-istpet-blue/20 dark:border-istpet-gold/20'}`}>
-            {message.type === 'error' ? <XCircle size={20} /> : <CheckCircle size={20} />}
-            {message.text}
-          </div>
+          <Toast type={message.type} text={message.text} onClose={() => setMessage(null)} />
         )}
 
         {/* Filtros */}

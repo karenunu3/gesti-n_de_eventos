@@ -6,6 +6,7 @@ import type { PasswordStrength } from '../lib/validators';
 import { MODALITIES, filterCareersByModality } from '../lib/modalities';
 import type { ModalityId } from '../lib/modalities';
 import { UserPlus, Mail, KeySquare, User, CreditCard, GraduationCap, Eye, EyeOff, Check, X, Building2 } from 'lucide-react';
+import Toast from '../components/Toast';
 
 const PasswordStrengthBar = ({ strength }: { strength: PasswordStrength }) => {
   if (!strength.score && strength.label === '') return null;
@@ -147,6 +148,7 @@ const Register = () => {
 
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row">
+      {error && <Toast type="error" text={error} onClose={() => setError('')} />}
       {/* Panel izquierdo — formulario */}
       <div className="w-full md:w-1/2 lg:w-2/5 flex items-center justify-center animated-gradient p-4 min-h-screen md:min-h-0">
         <div className="glass-dark w-full max-w-lg p-8 rounded-3xl fade-in relative overflow-hidden">
@@ -170,12 +172,6 @@ const Register = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/50 text-red-200 px-4 py-3 rounded-xl text-sm text-center">
-                  {error}
-                </div>
-              )}
-
               {/* Nombres */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">

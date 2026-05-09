@@ -62,6 +62,18 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 
+  /* Toast notification slide-down */
+  @keyframes slideDown {
+    from { opacity: 0; transform: translate(-50%, -120%); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+  }
+  @media (min-width: 640px) {
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-120%); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  }
+
   /* QR scanner line animation */
   @keyframes scanline {
     0%   { top: 10%; opacity: 0.6; }

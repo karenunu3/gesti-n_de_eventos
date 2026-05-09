@@ -6,6 +6,7 @@ import { MODALITIES, filterCareersByModality } from '../lib/modalities';
 import type { ModalityId } from '../lib/modalities';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import LiveIndicator from '../components/LiveIndicator';
+import Toast, { type ToastType } from '../components/Toast';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, Shield, ShieldAlert, BookOpen, GraduationCap, ArrowLeft,
@@ -74,6 +75,7 @@ const AdminUsers = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [careerFilter, setCareerFilter] = useState('ALL');
+  const [toast, setToast] = useState<{ type: ToastType; text: string } | null>(null);
   const navigate = useNavigate();
 
   const strength = getPasswordStrength(form.password);
@@ -93,7 +95,7 @@ const AdminUsers = () => {
       const data = await fetchApi('/users');
       setUsers(data);
     } catch (err: any) {
-      alert('Error cargando usuarios: ' + err.message);
+      setToast({ type: 'error', text: 'Error cargando usuarios: ' + err.message });
     } finally {
       setLoading(false);
     }
@@ -186,7 +188,7 @@ const AdminUsers = () => {
       });
       loadUsers();
     } catch (err: any) {
-      alert('Error al cambiar rol: ' + err.message);
+      setToast({ type: 'error', text: 'Error al cambiar rol: ' + err.message });
     }
   };
 
@@ -201,7 +203,7 @@ const AdminUsers = () => {
       });
       loadUsers();
     } catch (err: any) {
-      alert('Error al cambiar carrera: ' + err.message);
+      setToast({ type: 'error', text: 'Error al cambiar carrera: ' + err.message });
     }
   };
 
@@ -211,7 +213,7 @@ const AdminUsers = () => {
       await fetchApi(`/users/${id}`, { method: 'DELETE' });
       loadUsers();
     } catch (err: any) {
-      alert('Error al eliminar: ' + err.message);
+      setToast({ type: 'error', text: 'Error al eliminar: ' + err.message });
     }
   };
 
@@ -256,6 +258,7 @@ const AdminUsers = () => {
 
   return (
     <div className="p-6 md:p-8 max-w-6xl mx-auto w-full">
+      {toast && <Toast type={toast.type} text={toast.text} onClose={() => setToast(null)} />}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">

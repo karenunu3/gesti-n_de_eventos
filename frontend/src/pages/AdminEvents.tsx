@@ -11,6 +11,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import LiveIndicator from '../components/LiveIndicator';
 import Countdown from '../components/Countdown';
+import Toast, { type ToastType } from '../components/Toast';
 import { fmtDate, fmtTime, toDateTimeLocalInput, isBeforeToday } from '../lib/dates';
 
 const ISTPET_LAT = -0.2824216;
@@ -42,6 +43,7 @@ const AdminEvents = () => {
   const [filterTime, setFilterTime] = useState<'ALL' | 'UPCOMING' | 'PAST'>('UPCOMING');
   const [filterType, setFilterType] = useState<'ALL' | 'TRANSVERSAL' | 'SPECIFIC'>('ALL');
   const [filterCareer, setFilterCareer] = useState<string>('ALL');
+  const [toast, setToast] = useState<{ type: ToastType; text: string } | null>(null);
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isTeacher = user?.role === 'DOCENTE';
@@ -114,14 +116,14 @@ const AdminEvents = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim()) return alert('El título es obligatorio.');
+    if (!formData.title.trim()) return setToast({ type: 'error', text: 'El título es obligatorio.' });
     if (new Date(formData.endDate) <= new Date(formData.startDate))
-      return alert('La fecha de fin debe ser posterior a la fecha de inicio.');
-    if (parseInt(formData.hours) <= 0) return alert('El número de horas debe ser mayor a 0.');
+      return setToast({ type: 'error', text: 'La fecha de fin debe ser posterior a la fecha de inicio.' });
+    if (parseInt(formData.hours) <= 0) return setToast({ type: 'error', text: 'El número de horas debe ser mayor a 0.' });
     if (formData.capacity && parseInt(formData.capacity) <= 0)
-      return alert('El cupo debe ser un número positivo mayor a 0.');
+      return setToast({ type: 'error', text: 'El cupo debe ser un número positivo mayor a 0.' });
     if (!formData.isTransversal && formData.careers.length === 0)
-      return alert('Debes seleccionar al menos una carrera para un evento específico.');
+      return setToast({ type: 'error', text: 'Debes seleccionar al menos una carrera para un evento específico.' });
 
     try {
       // Convertir las fechas del input datetime-local (string sin zona, interpretado como
@@ -145,7 +147,8 @@ const AdminEvents = () => {
       }
       closeForm();
       loadEvents();
-    } catch (err: any) { alert(err.message); }
+      setToast({ type: 'success', text: editingEventId ? 'Evento actualizado correctamente' : 'Evento creado correctamente' });
+    } catch (err: any) { setToast({ type: 'error', text: err.message }); }
   };
 
   const handleDelete = async (id: number) => {
@@ -153,13 +156,14 @@ const AdminEvents = () => {
     try {
       await fetchApi(`/events/${id}`, { method: 'DELETE' });
       loadEvents();
-    } catch (err: any) { alert(err.message); }
+      setToast({ type: 'success', text: 'Evento eliminado correctamente' });
+    } catch (err: any) { setToast({ type: 'error', text: err.message }); }
   };
 
   const editEvent = (event: any) => {
     // Bloquear edición si el evento ya terminó antes de hoy
     if (isBeforeToday(event.endDate)) {
-      alert('Este evento ya finalizó. No se permite editarlo después del día en que se realizó.');
+      setToast({ type: 'warning', text: 'Este evento ya finalizó. No se permite editarlo después del día en que se realizó.' });
       return;
     }
     setFormData({
@@ -202,7 +206,7 @@ const AdminEvents = () => {
     try {
       const data = await fetchApi(`/attendance/event/${eventId}`);
       setAttendances(data);
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { setToast({ type: 'error', text: err.message }); }
   };
 
   const removeRegistration = async (regId: number, name: string) => {
@@ -210,7 +214,8 @@ const AdminEvents = () => {
     try {
       await fetchApi(`/events/registration/${regId}`, { method: 'DELETE' });
       if (selectedEventId) loadRegistrations(selectedEventId);
-    } catch (err: any) { alert(err.message); }
+      setToast({ type: 'success', text: `Inscripción de "${name}" eliminada` });
+    } catch (err: any) { setToast({ type: 'error', text: err.message }); }
   };
 
   const loadSurveys = async (eventId: number) => {
@@ -228,7 +233,8 @@ const AdminEvents = () => {
         method: 'PUT', body: JSON.stringify({ isValid })
       });
       loadAttendances(selectedEventId!);
-    } catch (err: any) { alert(err.message); }
+      setToast({ type: 'success', text: 'Estado de asistencia actualizado' });
+    } catch (err: any) { setToast({ type: 'error', text: err.message }); }
   };
 
   const downloadExcel = () => {
@@ -255,6 +261,7 @@ const AdminEvents = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300" translate="no">
+      {toast && <Toast type={toast.type} text={toast.text} onClose={() => setToast(null)} />}
       <div className="p-6 max-w-7xl mx-auto fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">

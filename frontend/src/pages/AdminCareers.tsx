@@ -8,6 +8,7 @@ import { MODALITIES, userInModality } from '../lib/modalities';
 import type { ModalityId } from '../lib/modalities';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import LiveIndicator from '../components/LiveIndicator';
+import Toast, { type ToastType } from '../components/Toast';
 
 const PasswordStrengthBar = ({ strength }: { strength: PasswordStrength }) => {
   if (!strength.score && strength.label === '') return null;
@@ -70,6 +71,7 @@ const AdminCareers = () => {
   const [newCareerModality, setNewCareerModality] = useState<ModalityId | ''>('');
   const [newCareerError, setNewCareerError] = useState('');
   const [newCareerLoading, setNewCareerLoading] = useState(false);
+  const [toast, setToast] = useState<{ type: ToastType; text: string } | null>(null);
   const [modalTab, setModalTab] = useState<'ALUMNO' | 'DOCENTE'>('ALUMNO');
   const [addMode, setAddMode] = useState<'EXISTING' | 'NEW'>('EXISTING');
 
@@ -184,7 +186,7 @@ const AdminCareers = () => {
       loadData();
       setSelectedExistingUserId('');
     } catch (err: any) {
-      alert('Error al asignar usuario: ' + err.message);
+      setToast({ type: 'error', text: 'Error al asignar usuario: ' + err.message });
     }
   };
 
@@ -236,7 +238,7 @@ const AdminCareers = () => {
       });
       loadData();
     } catch (err: any) {
-      alert('Error al retirar usuario: ' + err.message);
+      setToast({ type: 'error', text: 'Error al retirar usuario: ' + err.message });
     }
   };
 
@@ -257,6 +259,7 @@ const AdminCareers = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-8 transition-colors duration-300 w-full relative">
+      {toast && <Toast type={toast.type} text={toast.text} onClose={() => setToast(null)} />}
       <div className="max-w-7xl mx-auto w-full">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">

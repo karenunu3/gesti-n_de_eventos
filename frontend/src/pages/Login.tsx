@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
 import { LogIn, KeySquare, Mail, MapPin, Phone, Eye, EyeOff } from 'lucide-react';
+import Toast from '../components/Toast';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -37,6 +38,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row">
+      {error && <Toast type="error" text={error} onClose={() => setError('')} />}
       {/* Lado izquierdo: Formulario */}
       <div className="w-full md:w-1/2 lg:w-1/3 flex items-center justify-center animated-gradient p-4 min-h-screen md:min-h-0">
         <div className="glass-dark w-full max-w-md p-8 rounded-3xl fade-in relative overflow-hidden">
@@ -56,12 +58,7 @@ const Login = () => {
             </div>
 
             <form onSubmit={handleLogin} className="space-y-6">
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/50 text-red-200 px-4 py-3 rounded-xl text-sm text-center">
-                  {error}
-                </div>
-              )}
-              
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-300">Correo Electrónico</label>
                 <div className="relative">
