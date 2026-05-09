@@ -124,8 +124,13 @@ const AdminEvents = () => {
       return alert('Debes seleccionar al menos una carrera para un evento específico.');
 
     try {
+      // Convertir las fechas del input datetime-local (string sin zona, interpretado como
+      // hora local del navegador) a ISO 8601 con UTC explícito. Sin esto, el servidor
+      // (Vercel en UTC) interpreta la cadena como UTC y se desfasa la hora.
       const payload = {
         ...formData,
+        startDate: new Date(formData.startDate).toISOString(),
+        endDate: new Date(formData.endDate).toISOString(),
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         hours: parseInt(formData.hours),
         latitude: ISTPET_LAT,
