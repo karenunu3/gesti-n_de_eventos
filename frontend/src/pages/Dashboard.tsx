@@ -259,6 +259,56 @@ const Dashboard = () => {
       {/* ── ADMIN / SECRETARIA / DOCENTE VIEW ── */}
       {isAdminUser && (
         <div className="space-y-6 fade-in">
+          {/* Quick-access cards (movido al tope) */}
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Accesos rápidos</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <QuickCard
+              icon={<Calendar size={20} className="text-istpet-blue dark:text-istpet-gold" />}
+              iconBg="bg-istpet-blue/10 dark:bg-istpet-gold/10"
+              title={t('dashboard.admin_events')}
+              desc="Crea y gestiona eventos, proyecta QR para asistencia y audita registros."
+              stats={[
+                { label: 'Eventos del mes', value: eventStats.total },
+                { label: 'Inscritos', value: eventStats.totalRegistrations },
+                { label: 'Asistencias', value: eventStats.totalAttendances },
+              ]}
+              btnLabel="Ir a Eventos"
+              btnClass="bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light"
+              onClick={() => navigate('/admin/events')}
+            />
+            {['ADMIN', 'SECRETARIA'].includes(user.role) && (
+              <QuickCard
+                icon={<Layers size={20} className="text-istpet-blue dark:text-istpet-gold" />}
+                iconBg="bg-istpet-blue/10 dark:bg-istpet-gold/10"
+                title={t('dashboard.admin_careers')}
+                desc="Administra las carreras del instituto. Asócialas con eventos específicos."
+                stats={[
+                  { label: 'Carreras activas', value: adminStats.careersTotal },
+                  { label: 'Modalidades', value: 4 },
+                ]}
+                btnLabel="Ir a Carreras"
+                btnClass="bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light"
+                onClick={() => navigate('/admin/careers')}
+              />
+            )}
+            {user.role === 'ADMIN' && (
+              <QuickCard
+                icon={<Users size={20} className="text-istpet-blue dark:text-istpet-gold" />}
+                iconBg="bg-istpet-blue/10 dark:bg-istpet-gold/10"
+                title={t('dashboard.admin_users')}
+                desc="Gestiona el personal y alumnado. Asigna roles y permisos."
+                stats={[
+                  { label: 'Total usuarios', value: adminStats.usersTotal },
+                  { label: 'Alumnos', value: adminStats.alumnos },
+                  { label: 'Docentes', value: adminStats.docentes },
+                ]}
+                btnLabel="Ir a Usuarios"
+                btnClass="bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light"
+                onClick={() => navigate('/admin/users')}
+              />
+            )}
+          </div>
+
           {/* Quick stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {[
@@ -444,55 +494,6 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Quick-access cards */}
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Accesos rápidos</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            <QuickCard
-              icon={<Calendar size={20} className="text-istpet-blue dark:text-istpet-gold" />}
-              iconBg="bg-istpet-blue/10 dark:bg-istpet-gold/10"
-              title={t('dashboard.admin_events')}
-              desc="Crea y gestiona eventos, proyecta QR para asistencia y audita registros."
-              stats={[
-                { label: 'Eventos del mes', value: eventStats.total },
-                { label: 'Inscritos', value: eventStats.totalRegistrations },
-                { label: 'Asistencias', value: eventStats.totalAttendances },
-              ]}
-              btnLabel="Ir a Eventos"
-              btnClass="bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light"
-              onClick={() => navigate('/admin/events')}
-            />
-            {['ADMIN', 'SECRETARIA'].includes(user.role) && (
-              <QuickCard
-                icon={<Layers size={20} className="text-istpet-blue dark:text-istpet-gold" />}
-                iconBg="bg-istpet-blue/10 dark:bg-istpet-gold/10"
-                title={t('dashboard.admin_careers')}
-                desc="Administra las carreras del instituto. Asócialas con eventos específicos."
-                stats={[
-                  { label: 'Carreras activas', value: adminStats.careersTotal },
-                  { label: 'Modalidades', value: 4 },
-                ]}
-                btnLabel="Ir a Carreras"
-                btnClass="bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light"
-                onClick={() => navigate('/admin/careers')}
-              />
-            )}
-            {user.role === 'ADMIN' && (
-              <QuickCard
-                icon={<Users size={20} className="text-istpet-blue dark:text-istpet-gold" />}
-                iconBg="bg-istpet-blue/10 dark:bg-istpet-gold/10"
-                title={t('dashboard.admin_users')}
-                desc="Gestiona el personal y alumnado. Asigna roles y permisos."
-                stats={[
-                  { label: 'Total usuarios', value: adminStats.usersTotal },
-                  { label: 'Alumnos', value: adminStats.alumnos },
-                  { label: 'Docentes', value: adminStats.docentes },
-                ]}
-                btnLabel="Ir a Usuarios"
-                btnClass="bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900 hover:bg-istpet-blue-light dark:hover:bg-istpet-gold-light"
-                onClick={() => navigate('/admin/users')}
-              />
-            )}
-          </div>
         </div>
       )}
     </div>

@@ -39,7 +39,7 @@ const AdminEvents = () => {
 
   // Filtros estilo Eventos Institucionales
   const [searchText, setSearchText] = useState('');
-  const [filterTime, setFilterTime] = useState<'ALL' | 'UPCOMING' | 'PAST'>('UPCOMING');
+  const [filterTime, setFilterTime] = useState<'ALL' | 'ACTIVE' | 'UPCOMING' | 'PAST'>('ALL');
   const [filterType, setFilterType] = useState<'ALL' | 'TRANSVERSAL' | 'SPECIFIC'>('ALL');
   const [filterCareer, setFilterCareer] = useState<string>('ALL');
   const [toast, setToast] = useState<{ type: ToastType; text: string } | null>(null);
@@ -245,10 +245,16 @@ const AdminEvents = () => {
     ));
 
   const isPast = (e: any) => new Date(e.endDate) < new Date();
+  const isActive = (e: any) => {
+    const now = Date.now();
+    return new Date(e.startDate).getTime() <= now && new Date(e.endDate).getTime() > now;
+  };
+  const isUpcoming = (e: any) => new Date(e.startDate).getTime() > Date.now();
 
   const filteredEvents = events.filter(e => {
     if (searchText && !e.title.toLowerCase().includes(searchText.toLowerCase()) && !(e.description || '').toLowerCase().includes(searchText.toLowerCase())) return false;
-    if (filterTime === 'UPCOMING' && isPast(e)) return false;
+    if (filterTime === 'ACTIVE' && !isActive(e)) return false;
+    if (filterTime === 'UPCOMING' && !isUpcoming(e)) return false;
     if (filterTime === 'PAST' && !isPast(e)) return false;
     if (filterType === 'TRANSVERSAL' && !e.isTransversal) return false;
     if (filterType === 'SPECIFIC' && e.isTransversal) return false;
@@ -305,10 +311,10 @@ const AdminEvents = () => {
               <span className="text-xs text-slate-400 font-medium">Filtros:</span>
             </div>
 
-            {(['ALL', 'UPCOMING', 'PAST'] as const).map(v => (
+            {(['ALL', 'ACTIVE', 'UPCOMING', 'PAST'] as const).map(v => (
               <button key={v} onClick={() => setFilterTime(v)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filterTime === v ? 'bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
-                {v === 'ALL' ? 'Todos' : v === 'UPCOMING' ? 'Próximos' : 'Pasados'}
+                {v === 'ALL' ? 'Todos' : v === 'ACTIVE' ? 'Actuales' : v === 'UPCOMING' ? 'Próximos' : 'Pasados'}
               </button>
             ))}
 
@@ -409,7 +415,7 @@ const AdminEvents = () => {
                     ) : (
                       <div />
                     )}
-                    {!isTeacher && (
+                    {!isTeacher && !isPast(event) && (
                       <button onClick={() => handleDelete(event.id)} className="col-span-2 py-2 px-3 rounded-xl font-medium flex justify-center items-center gap-2 transition-colors bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 text-xs">
                         <Trash2 size={14} /> Eliminar
                       </button>

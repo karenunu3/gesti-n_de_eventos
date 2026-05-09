@@ -34,7 +34,7 @@ const Events = () => {
   const [searchText, setSearchText] = useState('');
   const [filterCareer, setFilterCareer] = useState<string>('ALL');
   const [filterType, setFilterType] = useState<'ALL' | 'TRANSVERSAL' | 'SPECIFIC'>('ALL');
-  const [filterTime, setFilterTime] = useState<'ALL' | 'UPCOMING' | 'PAST'>('UPCOMING');
+  const [filterTime, setFilterTime] = useState<'ALL' | 'ACTIVE' | 'UPCOMING' | 'PAST'>('ALL');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ENROLLED' | 'NOT_ENROLLED'>('ALL');
 
   useEffect(() => {
@@ -295,8 +295,9 @@ const Events = () => {
       if (!event.isTransversal && !event.careers?.some((c: any) => c.id.toString() === filterCareer)) return false;
     }
 
-    if (filterTime === 'UPCOMING' && endDate < now) return false;
-    if (filterTime === 'PAST' && startDate > now) return false;
+    if (filterTime === 'ACTIVE' && !(startDate <= now && endDate > now)) return false;
+    if (filterTime === 'UPCOMING' && startDate <= now) return false;
+    if (filterTime === 'PAST' && endDate >= now) return false;
 
     if (user?.role === 'ALUMNO') {
       if (filterStatus === 'ENROLLED' && !(event.registrations && event.registrations.length > 0)) return false;
@@ -362,10 +363,10 @@ const Events = () => {
             </div>
 
             {/* Tiempo */}
-            {(['ALL', 'UPCOMING', 'PAST'] as const).map(v => (
+            {(['ALL', 'ACTIVE', 'UPCOMING', 'PAST'] as const).map(v => (
               <button key={v} onClick={() => setFilterTime(v)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filterTime === v ? 'bg-istpet-blue dark:bg-istpet-gold text-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
-                {v === 'ALL' ? 'Todos' : v === 'UPCOMING' ? 'Próximos' : 'Pasados'}
+                {v === 'ALL' ? 'Todos' : v === 'ACTIVE' ? 'Actuales' : v === 'UPCOMING' ? 'Próximos' : 'Pasados'}
               </button>
             ))}
 
