@@ -9,6 +9,7 @@ import type { ModalityId } from '../lib/modalities';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import LiveIndicator from '../components/LiveIndicator';
 import Toast, { type ToastType } from '../components/Toast';
+import SearchableSelect from '../components/SearchableSelect';
 
 const PasswordStrengthBar = ({ strength }: { strength: PasswordStrength }) => {
   if (!strength.score && strength.label === '') return null;
@@ -501,17 +502,18 @@ const AdminCareers = () => {
 
                   {addMode === 'EXISTING' ? (
                     <div className="space-y-4">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">Selecciona un {modalTab.toLowerCase()} para añadirlo a esta modalidad de la carrera.</p>
-                      <select
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Busca un {modalTab.toLowerCase()} para añadirlo a esta modalidad de la carrera.</p>
+                      <SearchableSelect
                         value={selectedExistingUserId}
-                        onChange={e => setSelectedExistingUserId(e.target.value)}
-                        className={inputClass}
-                      >
-                        <option value="">-- Seleccionar usuario --</option>
-                        {unassignedUsers.map(u => (
-                          <option key={u.id} value={u.id}>{u.firstName} {u.lastName} ({u.dni})</option>
-                        ))}
-                      </select>
+                        onChange={setSelectedExistingUserId}
+                        placeholder={`-- Seleccionar ${modalTab.toLowerCase()} --`}
+                        emptyText={`No hay ${modalTab.toLowerCase()}s disponibles`}
+                        options={unassignedUsers.map(u => ({
+                          value: u.id,
+                          label: `${u.firstName} ${u.lastName} (${u.dni})`,
+                          searchText: `${u.email || ''} ${u.dni}`,
+                        }))}
+                      />
                       <button
                         onClick={handleAssignExisting}
                         disabled={!selectedExistingUserId}

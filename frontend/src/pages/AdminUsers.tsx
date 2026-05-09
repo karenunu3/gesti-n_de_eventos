@@ -10,7 +10,7 @@ import Toast, { type ToastType } from '../components/Toast';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, Shield, ShieldAlert, BookOpen, GraduationCap, ArrowLeft,
-  Lock, UserPlus, X, Eye, EyeOff, Trash2, Check, CreditCard
+  Lock, UserPlus, X, Eye, EyeOff, Trash2, Check, CreditCard, Search
 } from 'lucide-react';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -75,6 +75,7 @@ const AdminUsers = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [careerFilter, setCareerFilter] = useState('ALL');
+  const [searchText, setSearchText] = useState('');
   const [toast, setToast] = useState<{ type: ToastType; text: string } | null>(null);
   const navigate = useNavigate();
 
@@ -245,6 +246,12 @@ const AdminUsers = () => {
   const filteredUsers = users.filter(u => {
     if (roleFilter !== 'ALL' && u.role !== roleFilter) return false;
     if (careerFilter !== 'ALL' && u.career?.name !== careerFilter) return false;
+    if (searchText.trim()) {
+      const q = searchText.toLowerCase().trim();
+      const fullName = `${u.firstName} ${u.lastName}`.toLowerCase();
+      const matches = fullName.includes(q) || (u.email || '').toLowerCase().includes(q) || (u.dni || '').toLowerCase().includes(q);
+      if (!matches) return false;
+    }
     return true;
   });
 
@@ -287,6 +294,29 @@ const AdminUsers = () => {
           >
             <UserPlus size={16} /> Crear Usuario
           </button>
+        </div>
+      </div>
+
+      {/* Buscador */}
+      <div className="mb-4">
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Buscar por nombre, correo o cédula..."
+            value={searchText}
+            onChange={e => setSearchText(e.target.value)}
+            className="w-full pl-9 pr-9 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold transition-colors"
+          />
+          {searchText && (
+            <button
+              onClick={() => setSearchText('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              aria-label="Limpiar búsqueda"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
       </div>
 
