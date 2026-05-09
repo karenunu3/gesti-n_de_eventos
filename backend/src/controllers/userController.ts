@@ -127,6 +127,88 @@ export const updateUserRole = async (req: any, res: any): Promise<void> => {
   }
 };
 
+/** GET /users/me — datos del usuario logueado para "Mi Perfil". */
+export const getMyProfile = async (req: any, res: any): Promise<void> => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true, firstName: true, lastName: true, email: true, dni: true,
+        role: true, career: true, modalities: true, semester: true, photoUrl: true,
+        createdAt: true,
+      }
+    });
+    if (!user) {
+      res.status(404).json({ message: 'Usuario no encontrado' });
+      return;
+    }
+    res.status(200).json(user);
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error al obtener perfil', error: error.message });
+  }
+};
+
+/** PUT /users/me — actualizar nombre, apellido y foto. Email no editable (importante para login). */
+export const updateMyProfile = async (req: any, res: any): Promise<void> => {
+  try {
+    const { firstName, lastName, photoUrl } = req.body;
+    const updated = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        ...(firstName !== undefined ? { firstName: String(firstName).trim() } : {}),
+        ...(lastName !== undefined ? { lastName: String(lastName).trim() } : {}),
+        ...(photoUrl !== undefined ? { photoUrl: photoUrl ? String(photoUrl).trim() : null } : {}),
+      },
+      select: {
+        id: true, firstName: true, lastName: true, email: true, dni: true,
+        role: true, career: true, modalities: true, semester: true, photoUrl: true,
+      }
+    });
+    res.status(200).json(updated);
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error al actualizar perfil', error: error.message });
+  }
+};
+
+/** PUT /users/me/password — cambiar contraseña conocida (no es reset por correo). */
+export const changeMyPassword = async (req: any, res: any): Promise<void> => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ message: 'Faltan datos: contraseña actual y nueva.' });
+      return;
+    }
+    if (String(newPassword).length < 8) {
+      res.status(400).json({ message: 'La nueva contraseña debe tener al menos 8 caracteres.' });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) {
+      res.status(404).json({ message: 'Usuario no encontrado' });
+      return;
+    }
+
+    const ok = await bcrypt.compare(currentPassword, user.password);
+    if (!ok) {
+      res.status(400).json({ message: 'La contraseña actual es incorrecta.' });
+      return;
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashed = await bcrypt.hash(newPassword, salt);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashed },
+    });
+
+    res.status(200).json({ message: 'Contraseña actualizada correctamente.' });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error al cambiar contraseña', error: error.message });
+  }
+};
+
 export const updateUserCareer = async (req: any, res: any): Promise<void> => {
   try {
     const { id } = req.params;

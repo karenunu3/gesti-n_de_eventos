@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { fetchApi, API_URL } from '../lib/api';
 import { Calendar, MapPin, Clock, CheckCircle, XCircle, Star, QrCode, ArrowLeft, Search, Filter, Layers, GraduationCap, X } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import LiveIndicator from '../components/LiveIndicator';
@@ -19,6 +19,8 @@ const Events = () => {
   const [attendanceEventId, setAttendanceEventId] = useState<number | null>(null);
   const [message, setMessage] = useState<{text: string, type: 'error'|'success'} | null>(null);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [highlightedEventId, setHighlightedEventId] = useState<number | null>(null);
 
   // QR Scanner & Location state
   const [location, setLocation] = useState<{lat: number, lng: number} | null>(null);
@@ -62,6 +64,24 @@ const Events = () => {
   const refresh = useAutoRefresh(async () => {
     await loadEvents();
   }, 20000, !attendanceEventId && !showSurvey);
+
+  // Si vienes desde el Dashboard con ?eventId=X, hacer scroll y resaltar la card
+  useEffect(() => {
+    const eventIdParam = searchParams.get('eventId');
+    if (eventIdParam && events.length > 0) {
+      const id = parseInt(eventIdParam);
+      setHighlightedEventId(id);
+      setTimeout(() => {
+        const el = document.getElementById(`event-card-${id}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+      searchParams.delete('eventId');
+      setSearchParams(searchParams, { replace: true });
+      // Quitar resaltado después de 3 segundos
+      setTimeout(() => setHighlightedEventId(null), 3000);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events, searchParams]);
 
   useEffect(() => {
     return () => {
@@ -305,6 +325,20 @@ const Events = () => {
     }
 
     return true;
+  }).sort((a, b) => {
+    const now = Date.now();
+    const rank = (e: any) => {
+      const s = new Date(e.startDate).getTime();
+      const en = new Date(e.endDate).getTime();
+      if (s <= now && en > now) return 0; // actual
+      if (s > now) return 1;               // próximo
+      return 2;                            // pasado
+    };
+    const ra = rank(a), rb = rank(b);
+    if (ra !== rb) return ra - rb;
+    const sa = new Date(a.startDate).getTime();
+    const sb = new Date(b.startDate).getTime();
+    return ra === 2 ? sb - sa : sa - sb;
   });
 
   if (loading) return (
@@ -549,7 +583,15 @@ const Events = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map((event) => (
-              <div key={event.id} className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-xl dark:hover:shadow-slate-900/50 transition-all group flex flex-col">
+              <div
+                key={event.id}
+                id={`event-card-${event.id}`}
+                className={`bg-white dark:bg-slate-800 rounded-3xl shadow-sm border-2 overflow-hidden hover:shadow-xl dark:hover:shadow-slate-900/50 transition-all group flex flex-col ${
+                  highlightedEventId === event.id
+                    ? 'border-istpet-gold ring-4 ring-istpet-gold/30 animate-pulse'
+                    : 'border-slate-200 dark:border-slate-700'
+                }`}
+              >
                 <div className={`h-32 p-6 flex flex-col justify-end border-b-2 relative ${
                   isPast(event)
                     ? 'bg-gradient-to-r from-slate-500 to-slate-600 dark:from-slate-700 dark:to-slate-800 border-slate-400/50'

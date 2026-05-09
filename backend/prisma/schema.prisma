@@ -35,6 +35,7 @@ model User {
   career     Career?  @relation(fields: [careerId], references: [id])
   modalities String[] @default([])
   semester   Int?
+  photoUrl   String?
 
   resetToken       String?
   resetTokenExpiry DateTime?

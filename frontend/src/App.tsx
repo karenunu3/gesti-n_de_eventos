@@ -10,6 +10,7 @@ import VerifyCertificate from './pages/VerifyCertificate';
 import AdminEvents from './pages/AdminEvents';
 import AdminCareers from './pages/AdminCareers';
 import AdminUsers from './pages/AdminUsers';
+import Profile from './pages/Profile';
 import Footer from './components/Footer';
 import Navbar from './components/Navbar';
 
@@ -112,6 +113,7 @@ function App() {
               {/* Authenticated */}
               <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
               <Route path="/events" element={<PrivateRoute><Events /></PrivateRoute>} />
+              <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
 
               {/* Admin / Staff */}
               <Route path="/admin/events" element={<AdminRoute><AdminEvents /></AdminRoute>} />

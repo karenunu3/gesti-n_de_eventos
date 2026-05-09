@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import { fetchApi, API_URL } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import {
-  Calendar, FileText, Download, Users, BarChart3,
+  Calendar, FileText, Download, Users,
   GraduationCap, Layers, Clock, CheckCircle, XCircle
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import LiveIndicator from '../components/LiveIndicator';
@@ -329,57 +328,28 @@ const Dashboard = () => {
             ))}
           </div>
 
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Chart */}
-            <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col min-h-[350px]">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-50 flex items-center gap-2">
-                  <BarChart3 className="text-istpet-blue dark:text-istpet-gold" size={20} />
-                  Flujo de Alumnos por Evento
-                </h3>
-              </div>
-              
-              {eventsData.length > 0 ? (
-                <div className="w-full mt-4" style={{ minWidth: '1px', minHeight: '280px' }}>
-                  <ResponsiveContainer width="100%" height={280} minWidth={1} minHeight={1}>
-                    <BarChart data={eventsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
-                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b', fontWeight: 500 }} axisLine={false} tickLine={false} dy={10} />
-                      <YAxis tick={{ fontSize: 12, fill: '#64748b', fontWeight: 500 }} axisLine={false} tickLine={false} />
-                      <Tooltip 
-                        cursor={{ fill: 'rgba(226, 232, 240, 0.4)' }} 
-                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0/0.1), 0 4px 6px -4px rgb(0 0 0/0.1)', padding: '12px 16px', fontWeight: 600 }} 
-                        isAnimationActive={false} 
-                      />
-                      <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '13px', fontWeight: 500 }} />
-                      <Bar dataKey="Inscritos" fill="#BCA75B" radius={[6, 6, 0, 0]} barSize={32} isAnimationActive={false} />
-                      <Bar dataKey="Asistencias" fill="#1F295B" radius={[6, 6, 0, 0]} barSize={32} isAnimationActive={false} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
-                  <BarChart3 size={48} className="opacity-20 mb-4" />
-                  <p>No hay eventos este mes para mostrar gráficas.</p>
-                </div>
-              )}
+          {/* Eventos del Mes — sección única (sin gráfico) */}
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-50 flex items-center gap-2">
+                <Calendar className="text-istpet-blue dark:text-istpet-gold" size={20} />
+                Eventos del Mes
+              </h3>
+              <button
+                onClick={() => navigate('/admin/events')}
+                className="text-xs font-semibold text-istpet-blue dark:text-istpet-gold hover:underline"
+              >
+                Ver todos →
+              </button>
             </div>
-
-            {/* Próximos Eventos */}
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col min-h-[350px]">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-50 flex items-center gap-2">
-                  <Calendar className="text-istpet-blue dark:text-istpet-gold" size={20} />
-                  Eventos del Mes
-                </h3>
-              </div>
               
-              <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {rawEvents.length > 0 ? (
-                  rawEvents.slice(0, 5).map(event => {
+                  rawEvents.slice(0, 6).map(event => {
                     const isPast = new Date(event.endDate) < new Date();
-                    const targetPath = ['ADMIN', 'SECRETARIA', 'DOCENTE'].includes(user.role) ? '/admin/events' : '/events';
+                    const targetPath = ['ADMIN', 'SECRETARIA', 'DOCENTE'].includes(user.role)
+                      ? `/admin/events?eventId=${event.id}`
+                      : `/events?eventId=${event.id}`;
                     return (
                       <button
                         key={event.id}
@@ -413,18 +383,12 @@ const Dashboard = () => {
                     );
                   })
                 ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-center pb-8">
+                  <div className="col-span-full py-12 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-center">
                     <Calendar size={40} className="opacity-20 mb-3" />
                     <p className="text-sm">No hay eventos registrados en este mes.</p>
                   </div>
                 )}
-                {rawEvents.length > 5 && (
-                  <button onClick={() => navigate('/events')} className="w-full text-center text-sm font-semibold text-istpet-blue dark:text-istpet-gold hover:underline pt-2">
-                    Ver todos los eventos
-                  </button>
-                )}
               </div>
-            </div>
           </div>
 
           {/* Punto 6: Historial personal del docente */}

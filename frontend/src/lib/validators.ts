@@ -28,17 +28,44 @@ export function validateDocument(type: 'CI' | 'PASAPORTE', value: string): strin
   return type === 'CI' ? validateCI(value) : validatePassport(value);
 }
 
-// Email validation: formato estándar + dominio institucional obligatorio
+// Email validation: formato estándar + anti-correos falsos
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-const ISTPET_DOMAIN = '@istpet.edu.ec';
+
+// Dominios desechables/temporales más comunes — bloqueados
+const DISPOSABLE_DOMAINS = [
+  'mailinator.com', 'guerrillamail.com', 'guerrillamail.info', 'guerrillamail.biz', 'guerrillamail.org',
+  '10minutemail.com', '10minutemail.net', 'tempmail.com', 'tempmail.net', 'temp-mail.org',
+  'throwawaymail.com', 'yopmail.com', 'maildrop.cc', 'sharklasers.com', 'getnada.com',
+  'trashmail.com', 'fakeinbox.com', 'tempinbox.com', 'spam4.me', 'mintemail.com',
+  'dropmail.me', 'tempr.email', 'tmpmail.org', 'mohmal.com', 'inboxbear.com',
+];
+
+// Patrones de correos obviamente falsos
+const FAKE_PATTERNS = [
+  /^test@/i, /^asdf@/i, /^qwerty@/i, /^abc@/i, /^xyz@/i,
+  /@test\./i, /@example\./i, /@asdf\./i,
+  /^[a-z]{1,2}@[a-z]{1,2}\.[a-z]{2,3}$/i, // emails muy cortos como a@b.co
+];
 
 export function validateEmail(email: string): string | null {
   if (!email) return 'El correo es obligatorio.';
-  if (email.length > 254) return 'El correo es demasiado largo.';
-  if (!EMAIL_RE.test(email)) return 'Formato de correo inválido.';
-  if (!email.toLowerCase().endsWith(ISTPET_DOMAIN)) {
-    return `Solo se permiten correos institucionales (${ISTPET_DOMAIN}).`;
+  const trimmed = email.trim().toLowerCase();
+  if (trimmed.length > 254) return 'El correo es demasiado largo.';
+  if (!EMAIL_RE.test(trimmed)) return 'Formato de correo inválido (ej. usuario@dominio.com).';
+
+  const domain = trimmed.split('@')[1];
+  if (!domain) return 'Formato de correo inválido.';
+
+  // Bloquear dominios desechables
+  if (DISPOSABLE_DOMAINS.some(d => domain === d || domain.endsWith('.' + d))) {
+    return 'No se aceptan correos de dominios temporales o desechables.';
   }
+
+  // Bloquear patrones obviamente falsos
+  if (FAKE_PATTERNS.some(re => re.test(trimmed))) {
+    return 'Por favor ingresa un correo electrónico real.';
+  }
+
   return null;
 }
 

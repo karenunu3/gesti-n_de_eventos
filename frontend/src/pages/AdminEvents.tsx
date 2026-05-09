@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi, API_URL } from '../lib/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Users, FileSpreadsheet, MapPin, CheckCircle, XCircle,
   Map, QrCode, Layers, GraduationCap, Star, MessageSquare, X,
@@ -18,6 +18,7 @@ import { fmtDate, fmtTime, toDateTimeLocalInput, isBeforeToday } from '../lib/da
 
 const AdminEvents = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const goBack = () => { if (window.history.length > 1) navigate(-1); else navigate('/dashboard'); };
   const [events, setEvents] = useState<any[]>([]);
   const [careers, setCareers] = useState<any[]>([]);
@@ -56,6 +57,21 @@ const AdminEvents = () => {
     loadEvents();
     loadCareers();
   }, []);
+
+  // Si la URL trae ?eventId=X, abrir directamente el modal de auditoría de ese evento
+  useEffect(() => {
+    const eventIdParam = searchParams.get('eventId');
+    if (eventIdParam && events.length > 0) {
+      const ev = events.find(e => e.id.toString() === eventIdParam);
+      if (ev) {
+        openAudit(ev);
+        // Limpiar el query param para que no se vuelva a abrir si refrescas
+        searchParams.delete('eventId');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events, searchParams]);
 
   // Auto-refresh: lista de eventos cada 20s; auditoría (registros + asistencias + encuestas) cada 10s mientras el modal esté abierto
   const refreshAll = useAutoRefresh(async () => {
@@ -251,16 +267,28 @@ const AdminEvents = () => {
   };
   const isUpcoming = (e: any) => new Date(e.startDate).getTime() > Date.now();
 
-  const filteredEvents = events.filter(e => {
-    if (searchText && !e.title.toLowerCase().includes(searchText.toLowerCase()) && !(e.description || '').toLowerCase().includes(searchText.toLowerCase())) return false;
-    if (filterTime === 'ACTIVE' && !isActive(e)) return false;
-    if (filterTime === 'UPCOMING' && !isUpcoming(e)) return false;
-    if (filterTime === 'PAST' && !isPast(e)) return false;
-    if (filterType === 'TRANSVERSAL' && !e.isTransversal) return false;
-    if (filterType === 'SPECIFIC' && e.isTransversal) return false;
-    if (filterCareer !== 'ALL' && !e.isTransversal && !(e.careers || []).some((c: any) => c.id.toString() === filterCareer)) return false;
-    return true;
-  });
+  const filteredEvents = events
+    .filter(e => {
+      if (searchText && !e.title.toLowerCase().includes(searchText.toLowerCase()) && !(e.description || '').toLowerCase().includes(searchText.toLowerCase())) return false;
+      if (filterTime === 'ACTIVE' && !isActive(e)) return false;
+      if (filterTime === 'UPCOMING' && !isUpcoming(e)) return false;
+      if (filterTime === 'PAST' && !isPast(e)) return false;
+      if (filterType === 'TRANSVERSAL' && !e.isTransversal) return false;
+      if (filterType === 'SPECIFIC' && e.isTransversal) return false;
+      if (filterCareer !== 'ALL' && !e.isTransversal && !(e.careers || []).some((c: any) => c.id.toString() === filterCareer)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      // Orden: Actuales (0) → Próximos (1) → Pasados (2)
+      const rank = (e: any) => isActive(e) ? 0 : isUpcoming(e) ? 1 : 2;
+      const ra = rank(a), rb = rank(b);
+      if (ra !== rb) return ra - rb;
+      // Dentro del mismo grupo: por fecha de inicio ascendente (próximos primero)
+      // Excepto pasados: descendente (más recientes primero)
+      const sa = new Date(a.startDate).getTime();
+      const sb = new Date(b.startDate).getTime();
+      return ra === 2 ? sb - sa : sa - sb;
+    });
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300" translate="no">
