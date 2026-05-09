@@ -6,7 +6,7 @@ import {
   Map, QrCode, Layers, GraduationCap, Star, MessageSquare, X,
   Plus, Search, Filter, Calendar, Clock, Pencil, Trash2
 } from 'lucide-react';
-import LocationPicker from '../components/LocationPicker';
+import LocationPicker, { ISTPET_LAT, ISTPET_LNG, ISTPET_RADIUS_METERS } from '../components/LocationPicker';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import LiveIndicator from '../components/LiveIndicator';
@@ -14,8 +14,7 @@ import Countdown from '../components/Countdown';
 import Toast, { type ToastType } from '../components/Toast';
 import { fmtDate, fmtTime, toDateTimeLocalInput, isBeforeToday } from '../lib/dates';
 
-const ISTPET_LAT = -0.2824216;
-const ISTPET_LNG = -78.5555266;
+// Ubicación y radio fijos del ISTPET (no editables) — definidos en LocationPicker
 
 const AdminEvents = () => {
   const navigate = useNavigate();
@@ -50,7 +49,7 @@ const AdminEvents = () => {
 
   const [formData, setFormData] = useState({
     title: '', description: '', startDate: '', endDate: '', capacity: '', hours: '',
-    radiusMeters: 100, isTransversal: true, careers: [] as number[]
+    isTransversal: true, careers: [] as number[]
   });
 
   useEffect(() => {
@@ -126,9 +125,8 @@ const AdminEvents = () => {
       return setToast({ type: 'error', text: 'Debes seleccionar al menos una carrera para un evento específico.' });
 
     try {
-      // Convertir las fechas del input datetime-local (string sin zona, interpretado como
-      // hora local del navegador) a ISO 8601 con UTC explícito. Sin esto, el servidor
-      // (Vercel en UTC) interpreta la cadena como UTC y se desfasa la hora.
+      // Convertir las fechas del input datetime-local a ISO 8601 con UTC explícito.
+      // Ubicación y radio son FIJOS del ISTPET — no provienen del formulario.
       const payload = {
         ...formData,
         startDate: new Date(formData.startDate).toISOString(),
@@ -137,7 +135,7 @@ const AdminEvents = () => {
         hours: parseInt(formData.hours),
         latitude: ISTPET_LAT,
         longitude: ISTPET_LNG,
-        radiusMeters: formData.radiusMeters,
+        radiusMeters: ISTPET_RADIUS_METERS,
         careers: formData.isTransversal ? [] : formData.careers,
       };
       if (editingEventId) {
@@ -174,7 +172,6 @@ const AdminEvents = () => {
       endDate: toDateTimeLocalInput(event.endDate),
       capacity: event.capacity ? event.capacity.toString() : '',
       hours: event.hours.toString(),
-      radiusMeters: event.radiusMeters,
       isTransversal: event.isTransversal,
       careers: event.careers ? event.careers.map((c: any) => c.id) : []
     });
@@ -185,7 +182,7 @@ const AdminEvents = () => {
   const closeForm = () => {
     setShowForm(false);
     setEditingEventId(null);
-    setFormData({ title: '', description: '', startDate: '', endDate: '', capacity: '', hours: '', radiusMeters: 100, isTransversal: true, careers: [] });
+    setFormData({ title: '', description: '', startDate: '', endDate: '', capacity: '', hours: '', isTransversal: true, careers: [] });
   };
 
   const openAudit = async (event: any) => {
@@ -460,12 +457,7 @@ const AdminEvents = () => {
               </div>
               <div className="md:col-span-2 border-t border-slate-100 dark:border-slate-700 pt-6">
                 <h3 className="font-semibold flex items-center gap-2 mb-4 text-slate-800 dark:text-slate-200"><Map size={18} className="text-istpet-blue dark:text-istpet-gold" /> Área de Asistencia (Geocerca)</h3>
-                <LocationPicker radiusMeters={formData.radiusMeters} />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Radio de Validez: <span className="font-bold text-istpet-blue dark:text-istpet-gold">{formData.radiusMeters}m</span></label>
-                <input type="range" min="10" max="1000" step="10" className="w-full accent-istpet-blue dark:accent-istpet-gold" value={formData.radiusMeters} onChange={e => setFormData({...formData, radiusMeters: parseInt(e.target.value)})} />
-                <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 mt-1"><span>10m</span><span>1000m</span></div>
+                <LocationPicker />
               </div>
               <div className="md:col-span-2 border-t border-slate-100 dark:border-slate-700 pt-6">
                 <h3 className="font-semibold flex items-center gap-2 mb-4 text-slate-800 dark:text-slate-200"><GraduationCap size={18} className="text-istpet-blue dark:text-istpet-gold" /> Audiencia del Evento</h3>
