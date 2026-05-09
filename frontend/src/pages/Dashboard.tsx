@@ -24,7 +24,6 @@ const Dashboard = () => {
   // Punto 6: historial personal del docente
   const [docenteReport, setDocenteReport] = useState<any>(null);
   const [certMessage, setCertMessage] = useState<{text: string, type: 'error'|'success'|'info'} | null>(null);
-  const [eventsData, setEventsData] = useState<any[]>([]);
   const [rawEvents, setRawEvents] = useState<any[]>([]);
   const [eventStats, setEventStats] = useState({ total: 0, totalRegistrations: 0, totalAttendances: 0 });
   const [adminStats, setAdminStats] = useState({ usersTotal: 0, alumnos: 0, docentes: 0, careersTotal: 0 });
@@ -91,11 +90,6 @@ const Dashboard = () => {
       // Obtener eventos del mes actual para el dashboard
       const data = await fetchApi('/events/current-month');
       setRawEvents(data);
-      setEventsData(data.map((e: any) => ({
-        name: e.title.length > 14 ? e.title.substring(0, 14) + '…' : e.title,
-        Inscritos: e._count?.registrations || 0,
-        Asistencias: e._count?.attendances || 0,
-      })));
       setEventStats({
         total: data.length,
         totalRegistrations: data.reduce((s: number, e: any) => s + (e._count?.registrations || 0), 0),
