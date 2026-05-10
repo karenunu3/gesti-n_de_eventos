@@ -4,8 +4,8 @@ import { fetchApi } from '../lib/api';
 import { getPasswordStrength } from '../lib/validators';
 import type { PasswordStrength } from '../lib/validators';
 import {
-  ArrowLeft, User, Mail, GraduationCap, BookOpen, Save, Camera,
-  KeySquare, Eye, EyeOff, X, Check, Trash2, Image as ImageIcon
+  ArrowLeft, User, Mail, Save, Camera,
+  KeySquare, Eye, EyeOff, Trash2, Image as ImageIcon
 } from 'lucide-react';
 import Toast, { type ToastType } from '../components/Toast';
 import { MODALITIES } from '../lib/modalities';
