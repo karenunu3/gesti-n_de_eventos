@@ -1,14 +1,49 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
 import { getPasswordStrength } from '../lib/validators';
 import type { PasswordStrength } from '../lib/validators';
 import {
   ArrowLeft, User, Mail, Save, Camera,
-  KeySquare, Eye, EyeOff, Trash2, Image as ImageIcon
+  KeySquare, Eye, EyeOff, Trash2, Upload
 } from 'lucide-react';
 import Toast, { type ToastType } from '../components/Toast';
 import { MODALITIES } from '../lib/modalities';
+
+/** Lee un File como dataURL */
+const fileToDataURL = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+/**
+ * Redimensiona y comprime una imagen antes de subirla.
+ * Devuelve un dataURL JPEG de máximo 400x400 ~80KB.
+ */
+const resizeAndCompress = async (file: File, maxSize = 400, quality = 0.85): Promise<string> => {
+  const dataUrl = await fileToDataURL(file);
+  const img = new Image();
+  await new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+  // Recortar a cuadrado centrado y redimensionar
+  const side = Math.min(img.width, img.height);
+  const sx = (img.width - side) / 2;
+  const sy = (img.height - side) / 2;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = maxSize;
+  canvas.height = maxSize;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('No se pudo crear canvas');
+  ctx.drawImage(img, sx, sy, side, side, 0, 0, maxSize, maxSize);
+  return canvas.toDataURL('image/jpeg', quality);
+};
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Administrador', SECRETARIA: 'Secretaria', DOCENTE: 'Docente', ALUMNO: 'Alumno',
@@ -41,6 +76,8 @@ const Profile = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Cambio de contraseña
   const [currentPassword, setCurrentPassword] = useState('');
@@ -67,6 +104,34 @@ const Profile = () => {
       setToast({ type: 'error', text: 'Error cargando perfil: ' + err.message });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validaciones
+    if (!file.type.startsWith('image/')) {
+      setToast({ type: 'error', text: 'Selecciona una imagen (JPG, PNG, WebP).' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({ type: 'error', text: 'La imagen no puede pesar más de 5MB.' });
+      return;
+    }
+
+    setPhotoLoading(true);
+    try {
+      const compressed = await resizeAndCompress(file);
+      setPhotoUrl(compressed);
+      setToast({ type: 'success', text: 'Imagen lista. No olvides guardar los cambios.' });
+    } catch (err: any) {
+      setToast({ type: 'error', text: 'Error procesando la imagen: ' + err.message });
+    } finally {
+      setPhotoLoading(false);
+      // Reset input para que se pueda subir el mismo archivo nuevamente si se quiere
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -136,7 +201,8 @@ const Profile = () => {
   if (!profile) return null;
 
   const initials = `${(profile.firstName || '?')[0]}${(profile.lastName || '?')[0]}`.toUpperCase();
-  const photoOk = photoUrl && /^https?:\/\//.test(photoUrl);
+  // Acepta tanto URLs http(s) como dataURL (base64)
+  const photoOk = photoUrl && (/^https?:\/\//.test(photoUrl) || photoUrl.startsWith('data:image/'));
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6 md:p-8 transition-colors duration-300">
@@ -220,30 +286,54 @@ const Profile = () => {
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
-              <Camera size={12} /> Foto de perfil (URL)
+              <Camera size={12} /> Foto de perfil
             </label>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                className={inputClass}
-                placeholder="https://ejemplo.com/foto.jpg"
-                value={photoUrl}
-                onChange={e => setPhotoUrl(e.target.value)}
-              />
-              {photoUrl && (
+
+            {/* Input oculto */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
+            <div className="flex items-center gap-3">
+              {/* Preview pequeño */}
+              <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center flex-shrink-0">
+                {photoUrl
+                  ? <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                  : <Camera size={20} className="text-slate-400" />
+                }
+              </div>
+
+              <div className="flex-1 flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setPhotoUrl('')}
-                  className="flex items-center justify-center w-10 px-3 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  title="Quitar foto"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={photoLoading}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-istpet-blue dark:border-istpet-gold text-istpet-blue dark:text-istpet-gold bg-istpet-blue/5 dark:bg-istpet-gold/5 hover:bg-istpet-blue/10 dark:hover:bg-istpet-gold/10 transition-colors text-sm font-semibold disabled:opacity-60"
                 >
-                  <Trash2 size={15} />
+                  {photoLoading
+                    ? <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> Procesando...</>
+                    : <><Upload size={15} /> {photoUrl ? 'Cambiar foto' : 'Subir foto'}</>
+                  }
                 </button>
-              )}
+                {photoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setPhotoUrl('')}
+                    className="flex items-center justify-center px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    title="Quitar foto"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                )}
+              </div>
             </div>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
-              <ImageIcon size={11} />
-              Pega aquí la URL de tu foto. Puedes subirla a Google Drive (con enlace público), Imgur, etc.
+
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2">
+              Formatos aceptados: JPG, PNG, WebP · Máximo 5MB · Se redimensiona automáticamente a 400×400px.
             </p>
           </div>
 
