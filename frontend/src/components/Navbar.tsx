@@ -176,17 +176,18 @@ const Navbar = () => {
               )}
             </div>
 
-            {/* User chip — link a Mi Perfil */}
+            {/* User chip — link a Mi Perfil. En móvil solo avatar; en desktop avatar + nombre */}
             <Link
               to="/profile"
-              className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-istpet-blue/10 dark:hover:bg-istpet-gold/10 hover:text-istpet-blue dark:hover:text-istpet-gold px-2.5 py-1.5 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-istpet-blue/10 dark:hover:bg-istpet-gold/10 hover:text-istpet-blue dark:hover:text-istpet-gold p-1.5 sm:px-2.5 rounded-lg transition-colors"
               title="Mi perfil"
+              aria-label="Mi perfil"
             >
               {user?.photoUrl
-                ? <img src={user.photoUrl} alt="" className="w-5 h-5 rounded-full object-cover" onError={() => {}} />
-                : <User size={12} className="text-istpet-blue dark:text-istpet-gold" />
+                ? <img src={user.photoUrl} alt="" className="w-6 h-6 sm:w-5 sm:h-5 rounded-full object-cover" onError={() => {}} />
+                : <User size={16} className="text-istpet-blue dark:text-istpet-gold sm:w-3 sm:h-3" />
               }
-              <span>{user?.firstName}</span>
+              <span className="hidden sm:inline">{user?.firstName}</span>
             </Link>
 
             {/* Logout */}
@@ -231,6 +232,18 @@ const Navbar = () => {
               <span>{sub.label}</span>
             </Link>
           ))}
+          {/* Mi Perfil siempre visible al final en móvil */}
+          <Link
+            to="/profile"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
+              location.pathname === '/profile'
+                ? 'bg-istpet-blue/10 dark:bg-istpet-gold/10 text-istpet-blue dark:text-istpet-gold'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <User size={14} />
+            <span>Mi Perfil</span>
+          </Link>
         </div>
       </div>
     </nav>
