@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getStudentReport, generateCertificate, verifyCertificate, exportExcel, submitSurvey, getSurveyResults } from '../controllers/reportController';
+import { getStudentReport, getStudentDashboard, generateCertificate, verifyCertificate, exportExcel, submitSurvey, getSurveyResults } from '../controllers/reportController';
 import { protect, restrictTo } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -9,6 +9,9 @@ const router = Router();
 // Obtener reporte de un alumno (el admin puede pasar userId, el alumno se usa a sí mismo)
 router.get('/student', protect, getStudentReport);
 router.get('/student/:userId', protect, getStudentReport);
+
+// Dashboard enriquecido del alumno (incluye eventos próximos, sugeridos, badges, etc.)
+router.get('/student-dashboard', protect, getStudentDashboard);
 
 // Generar o recuperar certificado
 router.post('/certificate/:eventId', protect, generateCertificate);

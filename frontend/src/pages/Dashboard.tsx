@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { fetchApi, API_URL } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import {
-  Calendar, FileText, Download, Users,
-  GraduationCap, Layers, Clock, CheckCircle, XCircle
+  Calendar, Download, Users,
+  GraduationCap, Layers, CheckCircle, XCircle
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import LiveIndicator from '../components/LiveIndicator';
+import StudentDashboard from '../components/StudentDashboard';
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Administrador',
@@ -19,8 +20,6 @@ const ROLE_LABELS: Record<string, string> = {
 const Dashboard = () => {
   const { t } = useTranslation();
   const [user, setUser] = useState<any>(null);
-  const [report, setReport] = useState<any>(null);
-  const [reportError, setReportError] = useState(false);
   // Punto 6: historial personal del docente
   const [docenteReport, setDocenteReport] = useState<any>(null);
   const [certMessage, setCertMessage] = useState<{text: string, type: 'error'|'success'|'info'} | null>(null);
@@ -42,7 +41,8 @@ const Dashboard = () => {
       setUser(u);
 
       if (u.role === 'ALUMNO') {
-        loadReport().finally(() => setLoading(false));
+        // El StudentDashboard se encarga de cargar sus datos
+        setLoading(false);
       } else if (['ADMIN', 'SECRETARIA', 'DOCENTE'].includes(u.role)) {
         // Para DOCENTE: cargar datos admin + su historial personal
         const tasks: Promise<any>[] = [loadAdminData()];
@@ -59,21 +59,11 @@ const Dashboard = () => {
   // Auto-refresh cada 30s (respeta visibilidad del tab)
   const { isRefreshing, lastRefreshAt, refreshNow } = useAutoRefresh(async () => {
     if (!user) return;
-    if (user.role === 'ALUMNO') await loadReport();
-    else if (['ADMIN', 'SECRETARIA', 'DOCENTE'].includes(user.role)) {
+    if (['ADMIN', 'SECRETARIA', 'DOCENTE'].includes(user.role)) {
       await loadAdminData();
       if (user.role === 'DOCENTE') await loadDocenteReport();
     }
-  }, 30000, !!user);
-
-  const loadReport = async () => {
-    try {
-      const data = await fetchApi('/reports/student');
-      setReport(data);
-    } catch {
-      setReportError(true);
-    }
-  };
+  }, 30000, !!user && user.role !== 'ALUMNO');
 
   // Punto 6: historial personal del docente (igual endpoint que alumno, para sí mismo)
   const loadDocenteReport = async () => {
@@ -170,84 +160,8 @@ const Dashboard = () => {
         <LiveIndicator isRefreshing={isRefreshing} lastRefreshAt={lastRefreshAt} onRefresh={refreshNow} />
       </div>
 
-      {/* ── ALUMNO VIEW ── */}
-      {user.role === 'ALUMNO' && (
-        <div className="space-y-6">
-          {reportError && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-2xl p-6 text-center">
-              No se pudo cargar tu reporte. Intenta recargar la página.
-            </div>
-          )}
-
-          {certMessage && (
-            <div className={`p-4 rounded-2xl text-sm font-medium flex items-center gap-3 ${
-              certMessage.type === 'success' ? 'bg-istpet-blue/10 text-istpet-blue dark:bg-istpet-gold/10 dark:text-istpet-gold border border-istpet-blue/20 dark:border-istpet-gold/20' :
-              certMessage.type === 'info'    ? 'bg-istpet-gold/10 text-amber-700 dark:text-istpet-gold border border-istpet-gold/30' :
-                                               'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
-            }`}>
-              {certMessage.type === 'error' ? <XCircle size={18} /> : <CheckCircle size={18} />}
-              {certMessage.text}
-            </div>
-          )}
-
-          {report && (
-            <>
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-istpet-blue to-istpet-blue-light dark:from-slate-800 dark:to-slate-700 border-b-4 border-istpet-gold rounded-2xl p-6 text-white shadow-lg">
-                  <p className="text-sm opacity-80 mb-1 flex items-center gap-2">
-                    <Clock size={14} /> {t('dashboard.total_hours')}
-                  </p>
-                  <div className="text-4xl font-extrabold">
-                    {report.totalHours} <span className="text-xl font-medium opacity-70">hrs</span>
-                  </div>
-                </div>
-                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-2">
-                    <FileText size={14} /> Asistencias
-                  </p>
-                  <div className="text-4xl font-extrabold text-slate-800 dark:text-slate-50">
-                    {report.attendances.length}
-                  </div>
-                </div>
-              </div>
-
-              {/* Attendances list */}
-              <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                  <h3 className="font-bold text-lg text-slate-800 dark:text-slate-50">{t('dashboard.my_attendances')}</h3>
-                  <FileText className="text-slate-400" size={18} />
-                </div>
-                <div className="divide-y divide-slate-100 dark:divide-slate-700">
-                  {report.attendances.map((att: any) => (
-                    <div key={att.id} className="p-5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors gap-4">
-                      <div className="min-w-0">
-                        <h4 className="font-semibold text-slate-800 dark:text-slate-100 truncate">{att.event.title}</h4>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          {new Date(att.event.startDate).toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric' })}
-                          {' • '}{att.event.hours} horas
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => generateCert(att.eventId)}
-                        className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-istpet-blue/10 dark:bg-istpet-gold/10 text-istpet-blue dark:text-istpet-gold hover:bg-istpet-blue/20 dark:hover:bg-istpet-gold/20 rounded-xl text-sm font-medium transition-colors"
-                      >
-                        <Download size={15} />
-                        {t('dashboard.cert_btn')}
-                      </button>
-                    </div>
-                  ))}
-                  {report.attendances.length === 0 && (
-                    <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-                      {t('dashboard.no_attendances')}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      )}
+      {/* ── ALUMNO VIEW (rediseñada) ── */}
+      {user.role === 'ALUMNO' && <StudentDashboard />}
 
       {/* ── ADMIN / SECRETARIA / DOCENTE VIEW ── */}
       {isAdminUser && (
