@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { fetchApi, API_URL } from '../lib/api';
 import {
   Calendar, Clock, Award, TrendingUp, MapPin, Sparkles,
-  CheckCircle, Download, ChevronLeft, ChevronRight, User, FileText, ArrowRight, Trophy, Hourglass
+  CheckCircle, Download, User, FileText, ArrowRight, Trophy, Hourglass, Info
 } from 'lucide-react';
 import { fmtDate, fmtTime, humanCountdown } from '../lib/dates';
-import Toast, { type ToastType } from '../components/Toast';
+import Toast, { type ToastType } from './Toast';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import MiniCalendar from './MiniCalendar';
 
 interface DashboardData {
   totalHours: number;
@@ -27,7 +28,7 @@ const StudentDashboard = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ type: ToastType; text: string } | null>(null);
-  const [calMonth, setCalMonth] = useState(new Date());
+  const [showBadgeHelp, setShowBadgeHelp] = useState(false);
 
   const load = async () => {
     try {
@@ -85,25 +86,35 @@ const StudentDashboard = () => {
   const progress = Math.min((data.totalHours / data.progressTarget) * 100, 100);
   const unlockedBadges = data.badges.filter(b => b.unlocked).length;
 
-  // Mini calendario
-  const calY = calMonth.getFullYear();
-  const calM = calMonth.getMonth();
-  const firstDay = new Date(calY, calM, 1).getDay();
-  const daysInMonth = new Date(calY, calM + 1, 0).getDate();
-  const today = new Date();
-  const eventsByDay: Record<number, any[]> = {};
-  data.monthEvents.forEach(e => {
-    const d = new Date(e.startDate);
-    if (d.getFullYear() === calY && d.getMonth() === calM) {
-      const day = d.getDate();
-      eventsByDay[day] = eventsByDay[day] || [];
-      eventsByDay[day].push(e);
-    }
-  });
-
   return (
     <div className="space-y-6">
       {toast && <Toast type={toast.type} text={toast.text} onClose={() => setToast(null)} />}
+
+      {/* QUICK ACTIONS (movidos al tope) */}
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Accesos rápidos</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <button onClick={() => navigate('/events')} className="text-left bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
+          <div className="p-3 bg-istpet-blue/10 dark:bg-istpet-gold/10 rounded-xl w-fit mb-3 group-hover:scale-110 transition-transform">
+            <Calendar size={22} className="text-istpet-blue dark:text-istpet-gold" />
+          </div>
+          <h4 className="font-bold text-slate-800 dark:text-slate-50 text-base mb-1">Eventos institucionales</h4>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Explora e inscríbete a los eventos disponibles</p>
+        </button>
+        <button onClick={() => navigate('/events?filter=enrolled')} className="text-left bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
+          <div className="p-3 bg-istpet-gold/10 rounded-xl w-fit mb-3 group-hover:scale-110 transition-transform">
+            <FileText size={22} className="text-istpet-gold" />
+          </div>
+          <h4 className="font-bold text-slate-800 dark:text-slate-50 text-base mb-1">Mis certificados</h4>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Descarga los certificados de eventos a los que asististe</p>
+        </button>
+        <button onClick={() => navigate('/profile')} className="text-left bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
+          <div className="p-3 bg-istpet-blue/10 dark:bg-istpet-gold/10 rounded-xl w-fit mb-3 group-hover:scale-110 transition-transform">
+            <User size={22} className="text-istpet-blue dark:text-istpet-gold" />
+          </div>
+          <h4 className="font-bold text-slate-800 dark:text-slate-50 text-base mb-1">Mi perfil</h4>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Actualiza tu foto y datos personales</p>
+        </button>
+      </div>
 
       {/* HERO STATS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -266,7 +277,7 @@ const StudentDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* SUGERIDOS PARA TI */}
         <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <h3 className="font-bold text-lg text-slate-800 dark:text-slate-50 flex items-center gap-2">
               <Sparkles size={20} className="text-istpet-gold" />
               Sugeridos para ti
@@ -275,10 +286,15 @@ const StudentDashboard = () => {
               Ver todos →
             </button>
           </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 flex items-start gap-1.5">
+            <Info size={12} className="flex-shrink-0 mt-0.5" />
+            <span>Eventos futuros donde aún no estás inscrito, que son generales o de tu carrera, y tienen cupo disponible.</span>
+          </p>
           {data.suggested.length === 0 ? (
             <div className="text-center py-8 text-slate-400 dark:text-slate-500">
               <Sparkles size={32} className="mx-auto mb-2 opacity-30" />
-              <p className="text-sm">No hay nuevos eventos sugeridos. ¡Vuelve pronto!</p>
+              <p className="text-sm">No hay nuevos eventos sugeridos.</p>
+              <p className="text-xs mt-1">Cuando el ISTPET cree eventos para tu carrera, aparecerán aquí.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -307,59 +323,47 @@ const StudentDashboard = () => {
         </div>
 
         {/* MINI CALENDARIO */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-base text-slate-800 dark:text-slate-50 capitalize">
-              {calMonth.toLocaleDateString('es-EC', { month: 'long', year: 'numeric' })}
-            </h3>
-            <div className="flex gap-1">
-              <button onClick={() => setCalMonth(new Date(calY, calM - 1))} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500"><ChevronLeft size={16} /></button>
-              <button onClick={() => setCalMonth(new Date())} className="text-[10px] px-1.5 hover:text-istpet-blue dark:hover:text-istpet-gold text-slate-500 self-center font-semibold">Hoy</button>
-              <button onClick={() => setCalMonth(new Date(calY, calM + 1))} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500"><ChevronRight size={16} /></button>
-            </div>
-          </div>
-          <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1">
-            {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d, i) => <div key={i}>{d}</div>)}
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {Array(firstDay).fill(0).map((_, i) => <div key={`empty-${i}`} />)}
-            {Array(daysInMonth).fill(0).map((_, i) => {
-              const day = i + 1;
-              const isToday = today.getFullYear() === calY && today.getMonth() === calM && today.getDate() === day;
-              const dayEvents = eventsByDay[day] || [];
-              const hasEvents = dayEvents.length > 0;
-              return (
-                <button
-                  key={day}
-                  onClick={() => hasEvents && navigate(`/events?eventId=${dayEvents[0].id}`)}
-                  disabled={!hasEvents}
-                  className={`aspect-square flex flex-col items-center justify-center rounded-lg text-xs relative transition-colors ${
-                    isToday
-                      ? 'bg-istpet-blue text-white dark:bg-istpet-gold dark:text-slate-900 font-bold'
-                      : hasEvents
-                      ? 'bg-istpet-gold/20 text-istpet-blue dark:text-istpet-gold hover:bg-istpet-gold/40 cursor-pointer font-semibold'
-                      : 'text-slate-500 dark:text-slate-400'
-                  }`}
-                  title={hasEvents ? dayEvents.map(e => e.title).join(', ') : ''}
-                >
-                  {day}
-                  {hasEvents && !isToday && (
-                    <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-istpet-gold" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <MiniCalendar
+          events={data.monthEvents}
+          onEventClick={(ev) => navigate(`/events?eventId=${ev.id}`)}
+        />
       </div>
 
       {/* LOGROS / BADGES */}
       <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-        <h3 className="font-bold text-lg text-slate-800 dark:text-slate-50 flex items-center gap-2 mb-4">
-          <Trophy size={20} className="text-istpet-gold" />
-          Tus logros
-          <span className="text-xs px-2 py-0.5 rounded-full bg-istpet-gold/10 text-istpet-gold font-semibold">{unlockedBadges} / {data.badges.length}</span>
-        </h3>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h3 className="font-bold text-lg text-slate-800 dark:text-slate-50 flex items-center gap-2">
+            <Trophy size={20} className="text-istpet-gold" />
+            Tus logros
+            <span className="text-xs px-2 py-0.5 rounded-full bg-istpet-gold/10 text-istpet-gold font-semibold">{unlockedBadges} / {data.badges.length}</span>
+          </h3>
+          <button
+            onClick={() => setShowBadgeHelp(v => !v)}
+            className="flex items-center gap-1.5 text-xs font-semibold text-istpet-blue dark:text-istpet-gold hover:underline"
+          >
+            <Info size={13} /> {showBadgeHelp ? 'Ocultar' : '¿Cómo conseguirlos?'}
+          </button>
+        </div>
+
+        {/* Panel desplegable de ayuda */}
+        {showBadgeHelp && (
+          <div className="mb-4 p-4 bg-istpet-blue/5 dark:bg-istpet-gold/5 border border-istpet-blue/20 dark:border-istpet-gold/20 rounded-2xl text-sm text-slate-700 dark:text-slate-300 space-y-2">
+            <p className="font-semibold text-istpet-blue dark:text-istpet-gold">¿Cómo desbloquear logros?</p>
+            <p>Los logros se desbloquean automáticamente conforme participas en eventos institucionales. Para cada uno necesitas:</p>
+            <ul className="space-y-1.5 pl-2 text-xs">
+              <li><span className="inline-block w-5">🌱</span><strong>Primer paso</strong> — Asiste a tu primer evento (entrada + salida válidas).</li>
+              <li><span className="inline-block w-5">🥉</span><strong>Asistente activo</strong> — Acumula 5 asistencias válidas.</li>
+              <li><span className="inline-block w-5">🥈</span><strong>Comprometido</strong> — Llega a 10 asistencias válidas.</li>
+              <li><span className="inline-block w-5">🥇</span><strong>Top estudiante</strong> — Alcanza 20 asistencias válidas.</li>
+              <li><span className="inline-block w-5">⭐</span><strong>Medio centenar</strong> — Acumula 50 horas certificadas.</li>
+              <li><span className="inline-block w-5">🏆</span><strong>Centenar</strong> — Llega a 100 horas certificadas (meta anual).</li>
+            </ul>
+            <p className="text-xs pt-2 border-t border-istpet-blue/10 dark:border-istpet-gold/10">
+              💡 <strong>Tip:</strong> Una asistencia cuenta como válida cuando registras tu entrada Y tu salida dentro del área del evento (geocerca de 20m).
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {data.badges.map(b => (
             <div
@@ -386,31 +390,6 @@ const StudentDashboard = () => {
         </div>
       </div>
 
-      {/* QUICK ACTIONS */}
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 pt-2">Accesos rápidos</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <button onClick={() => navigate('/events')} className="text-left bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
-          <div className="p-3 bg-istpet-blue/10 dark:bg-istpet-gold/10 rounded-xl w-fit mb-3 group-hover:scale-110 transition-transform">
-            <Calendar size={22} className="text-istpet-blue dark:text-istpet-gold" />
-          </div>
-          <h4 className="font-bold text-slate-800 dark:text-slate-50 text-base mb-1">Eventos institucionales</h4>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Explora e inscríbete a los eventos disponibles</p>
-        </button>
-        <button onClick={() => navigate('/events?filter=enrolled')} className="text-left bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
-          <div className="p-3 bg-istpet-gold/10 rounded-xl w-fit mb-3 group-hover:scale-110 transition-transform">
-            <FileText size={22} className="text-istpet-gold" />
-          </div>
-          <h4 className="font-bold text-slate-800 dark:text-slate-50 text-base mb-1">Mis certificados</h4>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Descarga los certificados de eventos a los que asististe</p>
-        </button>
-        <button onClick={() => navigate('/profile')} className="text-left bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
-          <div className="p-3 bg-istpet-blue/10 dark:bg-istpet-gold/10 rounded-xl w-fit mb-3 group-hover:scale-110 transition-transform">
-            <User size={22} className="text-istpet-blue dark:text-istpet-gold" />
-          </div>
-          <h4 className="font-bold text-slate-800 dark:text-slate-50 text-base mb-1">Mi perfil</h4>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Actualiza tu foto y datos personales</p>
-        </button>
-      </div>
     </div>
   );
 };

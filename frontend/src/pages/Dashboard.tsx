@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import LiveIndicator from '../components/LiveIndicator';
 import StudentDashboard from '../components/StudentDashboard';
+import MiniCalendar from '../components/MiniCalendar';
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Administrador',
@@ -65,11 +66,13 @@ const Dashboard = () => {
     }
   }, 30000, !!user && user.role !== 'ALUMNO');
 
-  // Punto 6: historial personal del docente (igual endpoint que alumno, para sí mismo)
+  // Punto 6: historial personal del docente + eventos próximos inscritos
+  const [docenteUpcoming, setDocenteUpcoming] = useState<any[]>([]);
   const loadDocenteReport = async () => {
     try {
-      const data = await fetchApi('/reports/student');
-      setDocenteReport(data);
+      const data = await fetchApi('/reports/student-dashboard');
+      setDocenteReport({ totalHours: data.totalHours, attendances: data.attendances });
+      setDocenteUpcoming(data.upcomingRegistered || []);
     } catch {
       // silencioso — el docente puede no tener asistencias propias
     }
@@ -298,6 +301,64 @@ const Dashboard = () => {
                 )}
               </div>
           </div>
+
+          {/* Calendario del mes — visible para todos los roles admin */}
+          <MiniCalendar
+            events={rawEvents.map((e: any) => ({
+              id: e.id,
+              title: e.title,
+              startDate: e.startDate,
+              endDate: e.endDate,
+              isTransversal: e.isTransversal,
+            }))}
+            onEventClick={(ev) => navigate(`/admin/events?eventId=${ev.id}`)}
+            title="Calendario de eventos"
+          />
+
+          {/* Próximos eventos inscritos del docente */}
+          {user.role === 'DOCENTE' && docenteUpcoming.length > 0 && (
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-50 flex items-center gap-2">
+                  <Calendar size={18} className="text-istpet-blue dark:text-istpet-gold" />
+                  Mis próximos eventos
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-istpet-blue/10 dark:bg-istpet-gold/10 text-istpet-blue dark:text-istpet-gold font-semibold">{docenteUpcoming.length}</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Eventos donde estás inscrito como asistente</p>
+              </div>
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {docenteUpcoming.slice(0, 6).map((ev: any) => {
+                  const now = Date.now();
+                  const startMs = new Date(ev.startDate).getTime();
+                  const endMs = new Date(ev.endDate).getTime();
+                  const active = startMs <= now && endMs > now;
+                  return (
+                    <button
+                      key={ev.id}
+                      onClick={() => navigate(`/admin/events?eventId=${ev.id}`)}
+                      className="text-left p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600 hover:border-istpet-blue dark:hover:border-istpet-gold hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 line-clamp-2 flex-1">{ev.title}</h4>
+                        {active && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold flex-shrink-0 animate-pulse">EN VIVO</span>
+                        )}
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                        <div className="flex items-center gap-1">
+                          <Calendar size={11} /> {new Date(ev.startDate).toLocaleDateString('es-EC', { timeZone: 'America/Guayaquil', day: 'numeric', month: 'short' })}
+                          {' · '}{new Date(ev.startDate).toLocaleTimeString('es-EC', { timeZone: 'America/Guayaquil', hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                        <div className="text-[10px] font-semibold text-istpet-blue dark:text-istpet-gold">
+                          {ev.hours} horas · {ev.isTransversal ? 'General' : 'Específico'}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Punto 6: Historial personal del docente */}
           {user.role === 'DOCENTE' && certMessage && (
