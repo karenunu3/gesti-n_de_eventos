@@ -20,7 +20,7 @@ L.Marker.prototype.options.icon = DefaultIcon;
 // Coordenadas FIJAS — punto exacto del ISTPET (interior, no la puerta)
 export const ISTPET_LAT = -0.281660;
 export const ISTPET_LNG = -78.555455;
-export const ISTPET_RADIUS_METERS = 20;
+export const ISTPET_RADIUS_METERS = 100;
 
 interface LocationPickerProps {
   /** Props ignoradas — la ubicación y radio son fijos del ISTPET. Se mantienen por compatibilidad. */
