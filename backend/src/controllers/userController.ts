@@ -96,9 +96,30 @@ export const deleteUser = async (req: any, res: any): Promise<void> => {
       return;
     }
 
-    await prisma.user.delete({ where: { id: userId } });
+    // Verificar que el usuario exista antes de borrar (mejor mensaje de error)
+    const existing = await prisma.user.findUnique({ where: { id: userId } });
+    if (!existing) {
+      res.status(404).json({ message: 'Usuario no encontrado.' });
+      return;
+    }
+
+    // Eliminar en cascada todas las relaciones del usuario
+    // (el schema no tiene onDelete: Cascade configurado en todas las FKs)
+    await prisma.$transaction([
+      prisma.survey.deleteMany({ where: { userId } }),
+      prisma.certificate.deleteMany({ where: { userId } }),
+      prisma.eventAttendance.deleteMany({ where: { userId } }),
+      prisma.eventRegistration.deleteMany({ where: { userId } }),
+      prisma.user.delete({ where: { id: userId } }),
+    ]);
+
     res.status(200).json({ message: 'Usuario eliminado correctamente.' });
   } catch (error: any) {
+    if (error.code === 'P2025') {
+      res.status(404).json({ message: 'Usuario no encontrado.' });
+      return;
+    }
+    console.error('[deleteUser]', error);
     res.status(500).json({ message: 'Error al eliminar usuario', error: error.message });
   }
 };

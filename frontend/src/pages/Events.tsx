@@ -244,7 +244,7 @@ const Events = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      setMessage({ text: data.message + (data.isValid ? ' Dentro del radio.' : ' Fuera del radio.'), type: data.isValid ? 'success' : 'error' });
+      setMessage({ text: data.message, type: 'success' });
       cancelAttendance();
       loadEvents();
     } catch (err: any) {
@@ -680,7 +680,7 @@ const Events = () => {
                             }
                           })()}
                         </>
-                      ) : isPast(event) ? (
+                      ) : new Date(event.startDate) <= new Date() ? (
                         <div className="w-full py-3 px-4 rounded-xl font-semibold flex justify-center items-center gap-2 bg-slate-100 dark:bg-slate-700/60 text-slate-400 dark:text-slate-500 text-sm border border-slate-200 dark:border-slate-600 cursor-not-allowed select-none">
                           <XCircle size={16} /> Inscripciones cerradas
                         </div>

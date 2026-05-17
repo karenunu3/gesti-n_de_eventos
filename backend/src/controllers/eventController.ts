@@ -384,9 +384,10 @@ export const registerToEvent = async (req: any, res: Response): Promise<void> =>
       return;
     }
 
-    // Verificar que el evento no haya finalizado
-    if (event.endDate < new Date()) {
-      res.status(400).json({ message: 'No puedes inscribirte a un evento que ya ha finalizado' });
+    // Las inscripciones se cierran cuando el evento INICIA
+    // (ya no se permite inscribirse a eventos en curso ni finalizados)
+    if (event.startDate <= new Date()) {
+      res.status(400).json({ message: 'Las inscripciones están cerradas: el evento ya inició.' });
       return;
     }
 

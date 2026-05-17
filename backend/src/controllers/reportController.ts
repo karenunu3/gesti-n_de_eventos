@@ -106,17 +106,6 @@ export const getStudentDashboard = async (req: any, res: Response): Promise<void
       select: { id: true, title: true, startDate: true, endDate: true, isTransversal: true }
     });
 
-    // 8) Logros (badges) calculados según el progreso
-    const totalAttendances = attendances.length;
-    const badges = [
-      { id: 'first', label: 'Primer paso', icon: '🌱', desc: 'Asiste a tu primer evento', target: 1, current: Math.min(totalAttendances, 1), unlocked: totalAttendances >= 1 },
-      { id: 'active', label: 'Asistente activo', icon: '🥉', desc: '5 eventos asistidos', target: 5, current: Math.min(totalAttendances, 5), unlocked: totalAttendances >= 5 },
-      { id: 'committed', label: 'Comprometido', icon: '🥈', desc: '10 eventos asistidos', target: 10, current: Math.min(totalAttendances, 10), unlocked: totalAttendances >= 10 },
-      { id: 'top', label: 'Top estudiante', icon: '🥇', desc: '20 eventos asistidos', target: 20, current: Math.min(totalAttendances, 20), unlocked: totalAttendances >= 20 },
-      { id: 'hours50', label: 'Medio centenar', icon: '⭐', desc: '50 horas acumuladas', target: 50, current: Math.min(totalHours, 50), unlocked: totalHours >= 50 },
-      { id: 'hours100', label: 'Centenar', icon: '🏆', desc: '100 horas acumuladas', target: 100, current: Math.min(totalHours, 100), unlocked: totalHours >= 100 },
-    ];
-
     res.status(200).json({
       totalHours,
       attendances,
@@ -124,9 +113,6 @@ export const getStudentDashboard = async (req: any, res: Response): Promise<void
       suggested,
       pendingCertificates,
       monthEvents,
-      badges,
-      // Meta para progreso anual (target configurable; 100h es típico)
-      progressTarget: 100,
     });
   } catch (error: any) {
     res.status(500).json({ message: 'Error al cargar dashboard', error: error.message });

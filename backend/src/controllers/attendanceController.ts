@@ -76,12 +76,16 @@ export const markAttendance = async (req: any, res: Response): Promise<void> => 
     const checkInDeadline = new Date(eventStart.getTime() + 10 * 60000);
     const checkOutDeadline = new Date(eventEnd.getTime() + 10 * 60000);
 
-    // Lógica Antifraude: Distancia
+    // Lógica Antifraude: Distancia — si el alumno está fuera del radio, RECHAZAR la asistencia
     let isLocationValid = true;
     if (event.latitude && event.longitude && event.radiusMeters) {
       const distance = getDistanceFromLatLonInKm(event.latitude, event.longitude, parseFloat(latitude), parseFloat(longitude));
       if (distance > event.radiusMeters) {
-        isLocationValid = false; // Registrado fuera del radio
+        const meters = Math.round(distance);
+        res.status(400).json({
+          message: `🚫 Alerta: estás fuera del radio del evento (a ${meters}m). Por favor ingresa al auditorio para registrar tu asistencia.`
+        });
+        return;
       }
     }
 

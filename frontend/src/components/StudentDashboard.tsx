@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchApi, API_URL } from '../lib/api';
 import {
-  Calendar, Clock, Award, TrendingUp, MapPin, Sparkles,
-  CheckCircle, Download, User, FileText, ArrowRight, Trophy, Hourglass, Info
+  Calendar, Clock, Award, MapPin, Sparkles,
+  CheckCircle, Download, User, FileText, ArrowRight, Hourglass, Info
 } from 'lucide-react';
 import { fmtDate, fmtTime, humanCountdown } from '../lib/dates';
 import Toast, { type ToastType } from './Toast';
@@ -17,8 +17,6 @@ interface DashboardData {
   suggested: any[];
   pendingCertificates: any[];
   monthEvents: { id: number; title: string; startDate: string; endDate: string; isTransversal: boolean }[];
-  badges: { id: string; label: string; icon: string; desc: string; target: number; current: number; unlocked: boolean }[];
-  progressTarget: number;
 }
 
 const ISTPET_MAPS_URL = 'https://maps.google.com/?q=-0.281660,-78.555455';
@@ -28,7 +26,6 @@ const StudentDashboard = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ type: ToastType; text: string } | null>(null);
-  const [showBadgeHelp, setShowBadgeHelp] = useState(false);
 
   const load = async () => {
     try {
@@ -65,11 +62,11 @@ const StudentDashboard = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        setToast({ type: 'success', text: '¡Certificado descargado!' });
+        setToast({ type: 'success', text: 'Certificado descargado correctamente.' });
       }
     } catch (err: any) {
       if (err.message === 'SURVEY_REQUIRED') {
-        setToast({ type: 'info', text: 'Debes completar la encuesta antes de descargar. Ve a /events.' });
+        setToast({ type: 'info', text: 'Debes completar la encuesta antes de descargar el certificado.' });
       } else {
         setToast({ type: 'error', text: err.message });
       }
@@ -83,14 +80,11 @@ const StudentDashboard = () => {
   );
   if (!data) return null;
 
-  const progress = Math.min((data.totalHours / data.progressTarget) * 100, 100);
-  const unlockedBadges = data.badges.filter(b => b.unlocked).length;
-
   return (
     <div className="space-y-6">
       {toast && <Toast type={toast.type} text={toast.text} onClose={() => setToast(null)} />}
 
-      {/* QUICK ACTIONS (movidos al tope) */}
+      {/* ACCESOS RÁPIDOS */}
       <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Accesos rápidos</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <button onClick={() => navigate('/events')} className="text-left bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
@@ -116,8 +110,8 @@ const StudentDashboard = () => {
         </button>
       </div>
 
-      {/* HERO STATS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* STATS (sin gamificación) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-gradient-to-br from-istpet-blue to-istpet-blue-light text-white rounded-2xl p-5 shadow-lg border-b-4 border-istpet-gold">
           <Clock size={22} className="mb-2 opacity-80" />
           <div className="text-3xl font-extrabold">{data.totalHours}<span className="text-base font-medium opacity-70 ml-1">hrs</span></div>
@@ -127,11 +121,6 @@ const StudentDashboard = () => {
           <CheckCircle size={22} className="mb-2 opacity-80" />
           <div className="text-3xl font-extrabold">{data.attendances.length}</div>
           <p className="text-xs opacity-80 mt-1">Asistencias</p>
-        </div>
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
-          <Trophy size={22} className="mb-2 text-istpet-gold" />
-          <div className="text-3xl font-extrabold text-slate-800 dark:text-slate-50">{unlockedBadges}<span className="text-base font-medium text-slate-400 ml-1">/ {data.badges.length}</span></div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Logros</p>
         </div>
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
           <Award size={22} className="mb-2 text-istpet-blue dark:text-istpet-gold" />
@@ -148,7 +137,7 @@ const StudentDashboard = () => {
               <Award size={28} />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-lg text-slate-800 dark:text-slate-50">¡Tienes {data.pendingCertificates.length} certificado{data.pendingCertificates.length !== 1 ? 's' : ''} listo{data.pendingCertificates.length !== 1 ? 's' : ''} para descargar! 🎉</h3>
+              <h3 className="font-bold text-lg text-slate-800 dark:text-slate-50">Tienes {data.pendingCertificates.length} certificado{data.pendingCertificates.length !== 1 ? 's' : ''} listo{data.pendingCertificates.length !== 1 ? 's' : ''} para descargar</h3>
               <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">Has completado los eventos y tu asistencia fue validada.</p>
               <div className="flex flex-wrap gap-2 mt-3">
                 {data.pendingCertificates.slice(0, 3).map((att: any) => (
@@ -170,30 +159,6 @@ const StudentDashboard = () => {
           </div>
         </div>
       )}
-
-      {/* PROGRESO ANUAL */}
-      <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold text-lg text-slate-800 dark:text-slate-50 flex items-center gap-2">
-            <TrendingUp size={20} className="text-istpet-blue dark:text-istpet-gold" />
-            Progreso anual
-          </h3>
-          <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-            <span className="text-istpet-blue dark:text-istpet-gold text-lg">{data.totalHours}</span> / {data.progressTarget} hrs
-          </span>
-        </div>
-        <div className="h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-istpet-blue via-istpet-blue-light to-istpet-gold transition-all duration-700 ease-out rounded-full"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-          {data.totalHours >= data.progressTarget
-            ? '🎉 ¡Felicidades! Has completado tu meta anual de horas.'
-            : `Solo te faltan ${data.progressTarget - data.totalHours} horas para tu objetivo anual.`}
-        </p>
-      </div>
 
       {/* PRÓXIMOS EVENTOS INSCRITOS */}
       {data.upcomingRegistered.length > 0 && (
@@ -328,68 +293,6 @@ const StudentDashboard = () => {
           onEventClick={(ev) => navigate(`/events?eventId=${ev.id}`)}
         />
       </div>
-
-      {/* LOGROS / BADGES */}
-      <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h3 className="font-bold text-lg text-slate-800 dark:text-slate-50 flex items-center gap-2">
-            <Trophy size={20} className="text-istpet-gold" />
-            Tus logros
-            <span className="text-xs px-2 py-0.5 rounded-full bg-istpet-gold/10 text-istpet-gold font-semibold">{unlockedBadges} / {data.badges.length}</span>
-          </h3>
-          <button
-            onClick={() => setShowBadgeHelp(v => !v)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-istpet-blue dark:text-istpet-gold hover:underline"
-          >
-            <Info size={13} /> {showBadgeHelp ? 'Ocultar' : '¿Cómo conseguirlos?'}
-          </button>
-        </div>
-
-        {/* Panel desplegable de ayuda */}
-        {showBadgeHelp && (
-          <div className="mb-4 p-4 bg-istpet-blue/5 dark:bg-istpet-gold/5 border border-istpet-blue/20 dark:border-istpet-gold/20 rounded-2xl text-sm text-slate-700 dark:text-slate-300 space-y-2">
-            <p className="font-semibold text-istpet-blue dark:text-istpet-gold">¿Cómo desbloquear logros?</p>
-            <p>Los logros se desbloquean automáticamente conforme participas en eventos institucionales. Para cada uno necesitas:</p>
-            <ul className="space-y-1.5 pl-2 text-xs">
-              <li><span className="inline-block w-5">🌱</span><strong>Primer paso</strong> — Asiste a tu primer evento (entrada + salida válidas).</li>
-              <li><span className="inline-block w-5">🥉</span><strong>Asistente activo</strong> — Acumula 5 asistencias válidas.</li>
-              <li><span className="inline-block w-5">🥈</span><strong>Comprometido</strong> — Llega a 10 asistencias válidas.</li>
-              <li><span className="inline-block w-5">🥇</span><strong>Top estudiante</strong> — Alcanza 20 asistencias válidas.</li>
-              <li><span className="inline-block w-5">⭐</span><strong>Medio centenar</strong> — Acumula 50 horas certificadas.</li>
-              <li><span className="inline-block w-5">🏆</span><strong>Centenar</strong> — Llega a 100 horas certificadas (meta anual).</li>
-            </ul>
-            <p className="text-xs pt-2 border-t border-istpet-blue/10 dark:border-istpet-gold/10">
-              💡 <strong>Tip:</strong> Una asistencia cuenta como válida cuando registras tu entrada Y tu salida dentro del área del evento (geocerca de 20m).
-            </p>
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {data.badges.map(b => (
-            <div
-              key={b.id}
-              className={`relative p-4 rounded-2xl text-center transition-all ${
-                b.unlocked
-                  ? 'bg-gradient-to-br from-istpet-gold/20 to-istpet-gold/5 border-2 border-istpet-gold/40'
-                  : 'bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-700 opacity-60'
-              }`}
-              title={b.desc}
-            >
-              <div className="text-3xl mb-1">{b.unlocked ? b.icon : '🔒'}</div>
-              <div className={`text-xs font-bold ${b.unlocked ? 'text-istpet-blue dark:text-istpet-gold' : 'text-slate-500 dark:text-slate-400'}`}>
-                {b.label}
-              </div>
-              <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{b.current} / {b.target}</div>
-              {!b.unlocked && (
-                <div className="mt-2 h-1 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
-                  <div className="h-full bg-istpet-gold/60 rounded-full" style={{ width: `${(b.current / b.target) * 100}%` }} />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
     </div>
   );
 };
