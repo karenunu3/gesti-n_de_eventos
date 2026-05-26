@@ -19,7 +19,7 @@ RUN npx prisma generate
 RUN npx tsc
 
 # Compilar TypeScript a JavaScript (Seed)
-RUN npx tsc prisma/seed.ts --outDir dist/prisma --esModuleInterop --target es2022 --module commonjs --skipLibCheck
+RUN npx tsc prisma/seed.ts --outDir dist/prisma --esModuleInterop --target es2022 --module commonjs --skipLibCheck --ignoreConfig
 
 # Run Stage
 FROM node:20-alpine AS runner
