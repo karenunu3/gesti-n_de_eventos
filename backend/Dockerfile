@@ -35,6 +35,8 @@ RUN npm ci --omit=dev
 # Copiar el código compilado desde la etapa builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 # Generar el cliente de Prisma para la etapa de ejecución
 RUN npx prisma generate
