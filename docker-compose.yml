@@ -1,7 +1,10 @@
 version: '3.8'
+
 services:
-  postgres:
+  db:
     image: postgres:15-alpine
+    container_name: istpet-postgres
+    restart: always
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: adminpassword
@@ -10,6 +13,36 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: istpet-backend
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://admin:adminpassword@db:5432/istpet_db?schema=public
+      PORT: 4000
+      RUN_STANDALONE: "true"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: istpet-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
 
 volumes:
   pgdata:

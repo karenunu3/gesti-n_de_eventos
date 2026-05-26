@@ -59,7 +59,7 @@ app.use('/api', (_req, res) => {
   res.status(404).json({ message: 'Endpoint no encontrado' });
 });
 
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== 'production' || process.env.RUN_STANDALONE === 'true') {
   app.listen(port, () => {
     console.log(`Backend de ISTPET corriendo en http://localhost:${port}`);
   });

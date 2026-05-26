@@ -1,0 +1,48 @@
+# Build Stage
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Copiar archivos de dependencias
+COPY package*.json ./
+
+# Instalar todas las dependencias
+RUN npm ci
+
+# Copiar el resto del código
+COPY . .
+
+# Generar el cliente de Prisma
+RUN npx prisma generate
+
+# Compilar TypeScript a JavaScript
+RUN npx tsc
+
+# Run Stage
+FROM node:18-alpine AS runner
+
+WORKDIR /app
+
+# Copiar dependencias del package.json
+COPY package*.json ./
+
+# Instalar solo dependencias de producción
+RUN npm ci --omit=dev
+
+# Copiar el código compilado desde la etapa builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+
+# Generar el cliente de Prisma para la etapa de ejecución
+RUN npx prisma generate
+
+# Crear la carpeta de uploads persistente
+RUN mkdir -p uploads
+
+EXPOSE 4000
+
+ENV NODE_ENV=production
+ENV PORT=4000
+ENV RUN_STANDALONE=true
+
+CMD ["node", "dist/server.js"]

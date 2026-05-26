@@ -163,6 +163,15 @@ export const generateCertificate = async (req: any, res: Response): Promise<void
       where: { eventId_userId: { eventId, userId } }
     });
 
+    if (certificate && certificate.pdfUrl) {
+      res.status(200).json({
+        message: 'Certificado recuperado con éxito',
+        certificateCode: certificate.certificateCode,
+        pdfUrl: certificate.pdfUrl
+      });
+      return;
+    }
+
     if (!certificate) {
       certificate = await prisma.certificate.create({
         data: {
