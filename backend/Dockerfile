@@ -15,8 +15,11 @@ COPY . .
 # Generar el cliente de Prisma
 RUN npx prisma generate
 
-# Compilar TypeScript a JavaScript
+# Compilar TypeScript a JavaScript (App)
 RUN npx tsc
+
+# Compilar TypeScript a JavaScript (Seed)
+RUN npx tsc prisma/seed.ts --outDir dist/prisma --esModuleInterop --target es2022 --module commonjs --skipLibCheck
 
 # Run Stage
 FROM node:18-alpine AS runner
@@ -36,6 +39,10 @@ COPY --from=builder /app/prisma ./prisma
 # Generar el cliente de Prisma para la etapa de ejecución
 RUN npx prisma generate
 
+# Copiar el script de inicio
+COPY start.sh ./
+RUN chmod +x start.sh
+
 # Crear la carpeta de uploads persistente
 RUN mkdir -p uploads
 
@@ -45,4 +52,4 @@ ENV NODE_ENV=production
 ENV PORT=4000
 ENV RUN_STANDALONE=true
 
-CMD ["node", "dist/server.js"]
+CMD ["./start.sh"]

@@ -32,6 +32,7 @@ services:
       DATABASE_URL: postgresql://admin:adminpassword@db:5432/istpet_db?schema=public
       PORT: 4000
       RUN_STANDALONE: "true"
+      RUN_SEED: "false"
 
   frontend:
     build:
