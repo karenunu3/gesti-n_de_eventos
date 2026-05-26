@@ -4,7 +4,7 @@ echo "==== INICIANDO BACKEND EN PRODUCCIÓN ===="
 
 # Esperar y aplicar esquema con Prisma
 echo "Conectando a la base de datos y aplicando esquema..."
-until npx prisma db push --skip-generate; do
+until npx prisma db push; do
   echo "La base de datos no está disponible aún. Reintentando en 3 segundos..."
   sleep 3
 done
