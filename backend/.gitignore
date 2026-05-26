@@ -1,5 +1,13 @@
-node_modules
-# Keep environment variables out of version control
-.env
+# Dependencies
+node_modules/
 
-/generated/prisma
+# Local uploads (ignore all uploads except .gitkeep to keep directory structure)
+uploads/*
+!uploads/.gitkeep
+
+# Generated Prisma files
+/generated/prisma/
+
+# Local databases
+*.db
+*.db-journal

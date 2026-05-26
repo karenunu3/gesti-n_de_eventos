@@ -1,1 +1,40 @@
-.claude
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# IDEs, editors and OS files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Logs and diagnostic reports
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Build and output directories
+dist/
+dist-ssr/
+build/
+out/
+.vercel/
+
+# Testing and coverage
+coverage/
+.nyc_output/
+
+# Tool specific
+.claude/
+.gemini/
