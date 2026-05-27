@@ -1,5 +1,5 @@
 # Build Stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -19,10 +19,10 @@ RUN npx prisma generate
 RUN npx tsc
 
 # Compilar TypeScript a JavaScript (Seed)
-RUN npx tsc prisma/seed.ts --outDir dist/prisma --esModuleInterop --target es2022 --module commonjs --skipLibCheck
+RUN npx tsc prisma/seed.ts --outDir dist/prisma --esModuleInterop --target es2022 --module commonjs --skipLibCheck --ignoreConfig
 
 # Run Stage
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 
 WORKDIR /app
 
@@ -35,6 +35,8 @@ RUN npm ci --omit=dev
 # Copiar el código compilado desde la etapa builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 # Generar el cliente de Prisma para la etapa de ejecución
 RUN npx prisma generate

@@ -175,7 +175,7 @@ async function main() {
 
     // Mezclar y tomar un número aleatorio de alumnos (hasta llenar capacidad o max elegibles)
     elegibles.sort(() => 0.5 - Math.random());
-    const numToRegister = Math.min(ev.capacity, Math.floor(elegibles.length * 0.8)); // 80% de inscritos
+    const numToRegister = Math.min(ev.capacity ?? 999, Math.floor(elegibles.length * 0.8)); // 80% de inscritos
     const inscritos = elegibles.slice(0, numToRegister);
 
     for (const student of inscritos) {
