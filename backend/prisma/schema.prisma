@@ -80,8 +80,8 @@ model EventRegistration {
   id        Int      @id @default(autoincrement())
   eventId   Int
   userId    Int
-  event     Event    @relation(fields: [eventId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   registeredAt DateTime @default(now())
 
@@ -92,8 +92,8 @@ model EventAttendance {
   id        Int      @id @default(autoincrement())
   eventId   Int
   userId    Int
-  event     Event    @relation(fields: [eventId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   photoUrl  String   
   latitude  Float
@@ -115,8 +115,8 @@ model Certificate {
   certificateCode String @unique @default(uuid())
   eventId     Int
   userId      Int
-  event       Event    @relation(fields: [eventId], references: [id])
-  user        User     @relation(fields: [userId], references: [id])
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   hoursGranted Int
   pdfUrl      String?  
@@ -129,8 +129,8 @@ model Survey {
   id        Int      @id @default(autoincrement())
   eventId   Int
   userId    Int
-  event     Event    @relation(fields: [eventId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   rating    Int
   feedback  String?

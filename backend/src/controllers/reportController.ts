@@ -208,11 +208,17 @@ export const generateCertificate = async (req: any, res: Response): Promise<void
          pdfUrl = blobResult.url;
       } else {
          // Fallback local temporal si no hay Blob Token configurado en desarrollo
-         const uploadsDir = path.join(__dirname, '../../uploads');
-         if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-         const localPath = path.join(uploadsDir, fileName);
-         fs.writeFileSync(localPath, pdfBuffer);
-         pdfUrl = `/uploads/${fileName}`;
+         try {
+            const uploadsDir = path.join(__dirname, '../../uploads');
+            if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+            const localPath = path.join(uploadsDir, fileName);
+            fs.writeFileSync(localPath, pdfBuffer);
+            pdfUrl = `/uploads/${fileName}`;
+         } catch (fsError) {
+            console.warn('Filesystem is read-only. Falling back to self-contained Base64 Data URL.');
+            const base64Pdf = pdfBuffer.toString('base64');
+            pdfUrl = `data:application/pdf;base64,${base64Pdf}`;
+         }
       }
     } catch (blobError: any) {
       console.error('Error subiendo a Vercel Blob:', blobError);

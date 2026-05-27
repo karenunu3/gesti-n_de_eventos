@@ -73,8 +73,11 @@ export const markAttendance = async (req: any, res: Response): Promise<void> => 
     const eventStart = new Date(event.startDate);
     const eventEnd = new Date(event.endDate);
 
-    const checkInDeadline = new Date(eventStart.getTime() + 10 * 60000);
-    const checkOutDeadline = new Date(eventEnd.getTime() + 10 * 60000);
+    const checkInStart = new Date(eventStart.getTime() - 10 * 60000);
+    const checkInDeadline = new Date(eventStart.getTime() + 30 * 60000);
+
+    const checkOutStart = new Date(eventEnd.getTime() - 10 * 60000);
+    const checkOutDeadline = new Date(eventEnd.getTime() + 30 * 60000);
 
     // Lógica Antifraude: Distancia — si el alumno está fuera del radio, RECHAZAR la asistencia
     let isLocationValid = true;
@@ -96,9 +99,9 @@ export const markAttendance = async (req: any, res: Response): Promise<void> => 
         return;
       }
 
-      // Validar tiempo de check-out (exactamente al terminar el evento hasta 10 min después)
-      if (now < eventEnd || now > checkOutDeadline) {
-        res.status(400).json({ message: 'El registro de salida solo está habilitado durante los 10 minutos posteriores a la finalización del evento.' });
+      // Validar tiempo de check-out (desde 10 min antes de finalizar hasta 30 min después)
+      if (now < checkOutStart || now > checkOutDeadline) {
+        res.status(400).json({ message: 'El registro de salida solo está habilitado desde 10 minutos antes hasta 30 minutos después de la finalización del evento.' });
         return;
       }
       
@@ -123,7 +126,7 @@ export const markAttendance = async (req: any, res: Response): Promise<void> => 
 
     // Validar el Token QR para entrada
     try {
-      const decoded: any = jwt.verify(qrToken, process.env.JWT_SECRET || 'secret_fallback');
+      const decoded: any = jwt.verify(qrToken, process.env.JWT_SECRET || 'secret_fallback', { clockTolerance: 5 });
       if (decoded.eventId !== eventId || decoded.type !== 'attendance_qr') {
         res.status(400).json({ message: 'El código QR no corresponde a este evento' });
         return;
@@ -133,9 +136,9 @@ export const markAttendance = async (req: any, res: Response): Promise<void> => 
       return;
     }
 
-    // Validar tiempo de check-in (exactamente al inicio del evento hasta 10 min después)
-    if (now < eventStart || now > checkInDeadline) {
-      res.status(400).json({ message: 'El registro de entrada solo está habilitado durante los primeros 10 minutos de inicio del evento.' });
+    // Validar tiempo de check-in (desde 10 min antes de iniciar hasta 30 min después)
+    if (now < checkInStart || now > checkInDeadline) {
+      res.status(400).json({ message: 'El registro de entrada solo está habilitado desde 10 minutos antes hasta 30 minutos después del inicio del evento.' });
       return;
     }
 

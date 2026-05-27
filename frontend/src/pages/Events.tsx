@@ -258,7 +258,10 @@ const Events = () => {
       const res = await fetchApi(`/reports/certificate/${eventId}`, { method: 'POST' });
       if (res.pdfUrl) {
         const link = document.createElement('a');
-        link.href = `${API_URL.replace('/api', '')}${res.pdfUrl}`;
+        const downloadUrl = res.pdfUrl.startsWith('data:') || res.pdfUrl.startsWith('http')
+          ? res.pdfUrl
+          : `${API_URL.replace('/api', '')}${res.pdfUrl}`;
+        link.href = downloadUrl;
         link.target = '_blank';
         link.download = `Certificado_${eventId}.pdf`;
         document.body.appendChild(link);
