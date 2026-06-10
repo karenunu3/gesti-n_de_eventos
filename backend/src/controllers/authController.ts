@@ -22,7 +22,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     });
 
     if (existingUser) {
-      res.status(400).json({ message: 'El usuario o DNI ya están registrados.' });
+      res.status(400).json({ message: 'El usuario o CI ya están registrados.' });
       return;
     }
 

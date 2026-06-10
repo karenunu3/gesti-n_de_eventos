@@ -1,5 +1,5 @@
-
 import { MapPin, Phone, Mail } from 'lucide-react';
+import Logo from './Logo';
 
 const Footer = () => {
   return (
@@ -10,7 +10,7 @@ const Footer = () => {
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 rounded-xl">
-              <img src="https://institutotraversari.edu.ec/wp-content/uploads/2025/04/dorado-blanco.png" alt="Logo ISTPET" className="h-16 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              <Logo className="h-16 w-auto" variant="light" />
             </div>
           </div>
           <p className="text-sm opacity-80 max-w-xs">

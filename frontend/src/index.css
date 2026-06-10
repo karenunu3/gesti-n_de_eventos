@@ -3,11 +3,11 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-istpet-blue: #1F295B;
-  --color-istpet-blue-light: #2c3a80;
-  --color-istpet-gold: #BCA75B;
-  --color-istpet-gold-light: #d6bf69;
-  --color-istpet-gold-dark: #a3914e;
+  --color-istpet-blue: #222c57;
+  --color-istpet-blue-light: #2d3a73;
+  --color-istpet-gold: #c4a857;
+  --color-istpet-gold-light: #d8c17b;
+  --color-istpet-gold-dark: #a88e43;
 
   /* Typography — Poppins body, Raleway headings (same fonts as institutotraversari.edu.ec) */
   --font-sans: 'Poppins', system-ui, -apple-system, sans-serif;

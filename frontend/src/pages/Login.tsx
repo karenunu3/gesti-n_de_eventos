@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
 import { LogIn, KeySquare, Mail, MapPin, Phone, Eye, EyeOff } from 'lucide-react';
 import Toast from '../components/Toast';
+import Logo from '../components/Logo';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -49,7 +50,7 @@ const Login = () => {
           <div className="relative z-10">
             <div className="text-center mb-10">
               <div className="flex justify-center mb-4">
-                <img src="https://evainstitutotraversari.edu.ec/pluginfile.php/1/theme_alpha/customsidebarlogo/1765890840/logo-lateral2.png" alt="Logo ISTPET" className="h-20 object-contain drop-shadow-md" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                <Logo className="h-20 w-auto drop-shadow-md" variant="light" />
               </div>
               <h1 className="text-4xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-istpet-gold to-yellow-200">
                 ISTPET Eventos
@@ -124,6 +125,12 @@ const Login = () => {
                   Regístrate aquí
                 </Link>
               </p>
+
+              <div className="pt-4 border-t border-slate-700/50 mt-4">
+                <p className="text-center text-[10.5px] text-slate-400/70 leading-relaxed">
+                  Al iniciar sesión, autorizas al <strong>Instituto Superior Tecnológico "Mayor Pedro Traversari" (ISTPET)</strong> el tratamiento de tus datos personales de acuerdo con la Ley Orgánica de Protección de Datos Personales, con fines estrictamente académicos y de control de eventos.
+                </p>
+              </div>
             </form>
           </div>
         </div>

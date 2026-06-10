@@ -7,6 +7,7 @@ import { MODALITIES, filterCareersByModality } from '../lib/modalities';
 import type { ModalityId } from '../lib/modalities';
 import { UserPlus, Mail, KeySquare, User, CreditCard, GraduationCap, Eye, EyeOff, Check, X, Building2 } from 'lucide-react';
 import Toast from '../components/Toast';
+import Logo from '../components/Logo';
 
 const PasswordStrengthBar = ({ strength }: { strength: PasswordStrength }) => {
   if (!strength.score && strength.label === '') return null;
@@ -158,12 +159,7 @@ const Register = () => {
           <div className="relative z-10">
             <div className="text-center mb-8">
               <div className="flex justify-center mb-3">
-                <img
-                  src="https://evainstitutotraversari.edu.ec/pluginfile.php/1/theme_alpha/customsidebarlogo/1765890840/logo-lateral2.png"
-                  alt="Logo ISTPET"
-                  className="h-16 object-contain drop-shadow-md"
-                  onError={e => { e.currentTarget.style.display = 'none'; }}
-                />
+                <Logo className="h-16 w-auto drop-shadow-md" variant="light" />
               </div>
               <h1 className="text-3xl font-extrabold tracking-tight mb-1 text-transparent bg-clip-text bg-gradient-to-r from-istpet-gold to-yellow-200">
                 Crear Cuenta

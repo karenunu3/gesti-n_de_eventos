@@ -45,7 +45,7 @@ export const createUser = async (req: any, res: any): Promise<void> => {
       where: { OR: [{ email }, { dni }] }
     });
     if (existing) {
-      res.status(400).json({ message: 'Ya existe un usuario con ese correo o DNI.' });
+      res.status(400).json({ message: 'Ya existe un usuario con ese correo o CI.' });
       return;
     }
 

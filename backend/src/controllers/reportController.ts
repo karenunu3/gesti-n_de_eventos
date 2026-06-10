@@ -285,7 +285,7 @@ export const exportExcel = async (req: Request, res: Response): Promise<void> =>
     const worksheet = workbook.addWorksheet('Asistencia');
 
     worksheet.columns = [
-      { header: 'DNI', key: 'dni', width: 15 },
+      { header: 'CI', key: 'dni', width: 15 },
       { header: 'Nombres', key: 'firstName', width: 20 },
       { header: 'Apellidos', key: 'lastName', width: 20 },
       { header: 'Email', key: 'email', width: 30 },
