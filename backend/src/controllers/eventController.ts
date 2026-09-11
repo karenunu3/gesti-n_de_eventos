@@ -33,16 +33,16 @@ export const createEvent = async (req: any, res: Response): Promise<void> => {
       return;
     }
 
-    // 2. Validar duración máxima del evento (máximo 2 horas = 120 minutos)
+    // 2. Validar duración máxima del evento (máximo 7 horas = 420 minutos)
     const durationMs = endDateObj.getTime() - startDateObj.getTime();
-    if (durationMs > (2 * 60 * 60 * 1000 + 5000)) {
-      res.status(400).json({ message: 'La duración del evento no puede ser mayor a 2 horas (máximo 120 minutos). Por ejemplo, de 10:00 a 12:00.' });
+    if (durationMs > (7 * 60 * 60 * 1000 + 5000)) {
+      res.status(400).json({ message: 'La duración del evento no puede ser mayor a 7 horas (máximo 420 minutos).' });
       return;
     }
 
-    // 3. Validar horas académicas (1 o 2 horas)
-    if (!hours || hours < 1 || hours > 2) {
-      res.status(400).json({ message: 'Las horas académicas asignadas deben ser de 1 o máximo 2 horas.' });
+    // 3. Validar horas académicas (1 a 7 horas)
+    if (!hours || hours < 1 || hours > 7) {
+      res.status(400).json({ message: 'Las horas académicas asignadas deben ser de 1 a máximo 7 horas.' });
       return;
     }
 
@@ -54,7 +54,7 @@ export const createEvent = async (req: any, res: Response): Promise<void> => {
         ? `${durationMinutes / 60} ${durationMinutes / 60 === 1 ? 'hora' : 'horas'}`
         : `${(durationMinutes / 60).toFixed(1)} horas`;
       res.status(400).json({ 
-        message: `La duración del evento (${durationFormatted}) no coincide con el número de horas a certificar (${hours} ${hours === 1 ? 'hora' : 'horas'}). La hora de inicio y fin deben concordar con las horas certificables (p. ej., de 10:00 a 12:00 = 2 horas).` 
+        message: `La duración del evento (${durationFormatted}) no coincide con el número de horas a certificar (${hours} ${hours === 1 ? 'hora' : 'horas'}). La hora de inicio y fin deben concordar con las horas certificables.` 
       });
       return;
     }
@@ -135,16 +135,16 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // 2. Validar duración máxima del evento (máximo 2 horas = 120 minutos)
+    // 2. Validar duración máxima del evento (máximo 7 horas = 420 minutos)
     const durationMs = endDateObj.getTime() - startDateObj.getTime();
-    if (durationMs > (2 * 60 * 60 * 1000 + 5000)) {
-      res.status(400).json({ message: 'La duración del evento no puede ser mayor a 2 horas (máximo 120 minutos). Por ejemplo, de 10:00 a 12:00.' });
+    if (durationMs > (7 * 60 * 60 * 1000 + 5000)) {
+      res.status(400).json({ message: 'La duración del evento no puede ser mayor a 7 horas (máximo 420 minutos).' });
       return;
     }
 
-    // 3. Validar horas académicas (1 o 2 horas)
-    if (!hours || hours < 1 || hours > 2) {
-      res.status(400).json({ message: 'Las horas académicas asignadas deben ser de 1 o máximo 2 horas.' });
+    // 3. Validar horas académicas (1 a 7 horas)
+    if (!hours || hours < 1 || hours > 7) {
+      res.status(400).json({ message: 'Las horas académicas asignadas deben ser de 1 a máximo 7 horas.' });
       return;
     }
 
@@ -156,7 +156,7 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
         ? `${durationMinutes / 60} ${durationMinutes / 60 === 1 ? 'hora' : 'horas'}`
         : `${(durationMinutes / 60).toFixed(1)} horas`;
       res.status(400).json({ 
-        message: `La duración del evento (${durationFormatted}) no coincide con el número de horas a certificar (${hours} ${hours === 1 ? 'hora' : 'horas'}). La hora de inicio y fin deben concordar con las horas certificables (p. ej., de 10:00 a 12:00 = 2 horas).` 
+        message: `La duración del evento (${durationFormatted}) no coincide con el número de horas a certificar (${hours} ${hours === 1 ? 'hora' : 'horas'}). La hora de inicio y fin deben concordar con las horas certificables.` 
       });
       return;
     }

@@ -140,8 +140,9 @@ const AdminEvents = () => {
           const startObj = new Date(parseEcuadorDateTimeLocal(newStart));
           const endObj = new Date(parseEcuadorDateTimeLocal(prev.endDate));
           const diffMins = Math.round((endObj.getTime() - startObj.getTime()) / (1000 * 60));
-          if (diffMins === 60) next.hours = '1';
-          else if (diffMins === 120) next.hours = '2';
+          if (diffMins >= 60 && diffMins <= 420 && diffMins % 60 === 0) {
+            next.hours = (diffMins / 60).toString();
+          }
         } catch {}
       }
       return next;
@@ -156,8 +157,9 @@ const AdminEvents = () => {
           const startObj = new Date(parseEcuadorDateTimeLocal(prev.startDate));
           const endObj = new Date(parseEcuadorDateTimeLocal(newEnd));
           const diffMins = Math.round((endObj.getTime() - startObj.getTime()) / (1000 * 60));
-          if (diffMins === 60) next.hours = '1';
-          else if (diffMins === 120) next.hours = '2';
+          if (diffMins >= 60 && diffMins <= 420 && diffMins % 60 === 0) {
+            next.hours = (diffMins / 60).toString();
+          }
         } catch {}
       }
       return next;
@@ -178,8 +180,8 @@ const AdminEvents = () => {
       if (diffMins <= 0) {
         return { isError: true, text: 'La fecha y hora de fin debe ser posterior a la fecha de inicio.' };
       }
-      if (diffMins > 120) {
-        return { isError: true, text: `Duración del horario: ${Math.floor(diffMins/60)}h ${diffMins%60}m. ¡Supera el máximo permitido de 2 horas (120 min)!` };
+      if (diffMins > 420) {
+        return { isError: true, text: `Duración del horario: ${Math.floor(diffMins/60)}h ${diffMins%60}m. ¡Supera el máximo permitido de 7 horas (420 min)!` };
       }
 
       const durationHoursFmt = diffMins % 60 === 0 ? `${diffMins / 60}` : `${(diffMins / 60).toFixed(1)}`;
@@ -213,18 +215,18 @@ const AdminEvents = () => {
       return setToast({ type: 'error', text: 'La fecha de inicio debe ser anterior a la fecha de fin.' });
     }
 
-    if (durationMs > (2 * 60 * 60 * 1000 + 5000)) {
+    if (durationMs > (7 * 60 * 60 * 1000 + 5000)) {
       return setToast({
         type: 'error',
-        text: 'La duración del evento no puede superar las 2 horas (máximo 120 minutos). Por ejemplo, de 10:00 a 12:00.'
+        text: 'La duración del evento no puede superar las 7 horas (máximo 420 minutos).'
       });
     }
 
     const hoursNum = parseInt(formData.hours);
-    if (!hoursNum || hoursNum < 1 || hoursNum > 2) {
+    if (!hoursNum || hoursNum < 1 || hoursNum > 7) {
       return setToast({
         type: 'error',
-        text: 'Las horas a certificar deben ser de 1 o máximo 2 horas.'
+        text: 'Las horas a certificar deben ser de 1 a máximo 7 horas.'
       });
     }
 
@@ -590,15 +592,15 @@ const AdminEvents = () => {
                 <input required type="text" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Horas a certificar (Máx. 2h)</label>
-                <input required type="number" min="1" max="2" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.hours} onChange={e => setFormData({...formData, hours: e.target.value})} />
+                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Horas a certificar (Máx. 7h)</label>
+                <input required type="number" min="1" max="7" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.hours} onChange={e => setFormData({...formData, hours: e.target.value})} />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Fecha Inicio</label>
                 <input required type="datetime-local" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.startDate} onChange={e => handleStartDateChange(e.target.value)} />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Fecha Fin (Máx. 2h de diferencia)</label>
+                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Fecha Fin (Máx. 7h de diferencia)</label>
                 <input required type="datetime-local" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.endDate} onChange={e => handleEndDateChange(e.target.value)} />
               </div>
               {(() => {
