@@ -135,9 +135,25 @@ const AdminEvents = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim()) return setToast({ type: 'error', text: 'El título es obligatorio.' });
-    if (new Date(formData.endDate) <= new Date(formData.startDate))
-      return setToast({ type: 'error', text: 'La fecha de fin debe ser posterior a la fecha de inicio.' });
-    if (parseInt(formData.hours) <= 0) return setToast({ type: 'error', text: 'El número de horas debe ser mayor a 0.' });
+    const startIso = parseEcuadorDateTimeLocal(formData.startDate);
+    const endIso = parseEcuadorDateTimeLocal(formData.endDate);
+    const durationHours = (new Date(endIso).getTime() - new Date(startIso).getTime()) / (1000 * 60 * 60);
+
+    if (durationHours > 2.001) {
+      return setToast({
+        type: 'error',
+        text: 'La duración del evento no puede superar las 2 horas (máximo 120 minutos). Por ejemplo, de 10:00 a 12:00.'
+      });
+    }
+
+    const hoursNum = parseInt(formData.hours);
+    if (!hoursNum || hoursNum < 1 || hoursNum > 2) {
+      return setToast({
+        type: 'error',
+        text: 'Las horas a certificar deben ser de 1 o máximo 2 horas.'
+      });
+    }
+
     if (formData.capacity && parseInt(formData.capacity) <= 0)
       return setToast({ type: 'error', text: 'El cupo debe ser un número positivo mayor a 0.' });
     if (!formData.isTransversal && formData.careers.length === 0)
@@ -489,15 +505,15 @@ const AdminEvents = () => {
                 <input required type="text" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Horas a certificar</label>
-                <input required type="number" min="1" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.hours} onChange={e => setFormData({...formData, hours: e.target.value})} />
+                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Horas a certificar (Máx. 2h)</label>
+                <input required type="number" min="1" max="2" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.hours} onChange={e => setFormData({...formData, hours: e.target.value})} />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Fecha Inicio</label>
                 <input required type="datetime-local" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Fecha Fin</label>
+                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Fecha Fin (Máx. 2h de diferencia)</label>
                 <input required type="datetime-local" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} />
               </div>
               <div>

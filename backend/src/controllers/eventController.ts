@@ -33,9 +33,16 @@ export const createEvent = async (req: any, res: Response): Promise<void> => {
       return;
     }
 
-    // 2. Validar horas (1-8)
-    if (!hours || hours < 1 || hours > 8) {
-      res.status(400).json({ message: 'Las horas deben estar entre 1 y 8' });
+    // 2. Validar duración máxima del evento (máximo 2 horas = 120 minutos)
+    const durationMs = endDateObj.getTime() - startDateObj.getTime();
+    if (durationMs > (2 * 60 * 60 * 1000 + 5000)) {
+      res.status(400).json({ message: 'La duración del evento no puede ser mayor a 2 horas (máximo 120 minutos). Por ejemplo, de 10:00 a 12:00.' });
+      return;
+    }
+
+    // 3. Validar horas académicas (1 o 2 horas)
+    if (!hours || hours < 1 || hours > 2) {
+      res.status(400).json({ message: 'Las horas académicas asignadas deben ser de 1 o máximo 2 horas.' });
       return;
     }
 
@@ -115,9 +122,16 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // 2. Validar horas (1-8)
-    if (!hours || hours < 1 || hours > 8) {
-      res.status(400).json({ message: 'Las horas deben estar entre 1 y 8' });
+    // 2. Validar duración máxima del evento (máximo 2 horas = 120 minutos)
+    const durationMs = endDateObj.getTime() - startDateObj.getTime();
+    if (durationMs > (2 * 60 * 60 * 1000 + 5000)) {
+      res.status(400).json({ message: 'La duración del evento no puede ser mayor a 2 horas (máximo 120 minutos). Por ejemplo, de 10:00 a 12:00.' });
+      return;
+    }
+
+    // 3. Validar horas académicas (1 o 2 horas)
+    if (!hours || hours < 1 || hours > 2) {
+      res.status(400).json({ message: 'Las horas académicas asignadas deben ser de 1 o máximo 2 horas.' });
       return;
     }
 

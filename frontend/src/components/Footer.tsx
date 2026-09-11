@@ -51,7 +51,7 @@ const Footer = () => {
         <div className="space-y-4">
           <h4 className="font-bold text-istpet-gold text-lg mb-4">Síguenos</h4>
           <div className="flex gap-4">
-            <a href="https://www.facebook.com/institutotraversari" target="_blank" rel="noopener noreferrer" className="bg-white/10 p-3 rounded-full hover:bg-istpet-gold hover:text-istpet-blue transition-colors flex items-center justify-center">
+            <a href="https://www.facebook.com/tecnologicotraversari" target="_blank" rel="noopener noreferrer" className="bg-white/10 p-3 rounded-full hover:bg-istpet-gold hover:text-istpet-blue transition-colors flex items-center justify-center">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
             </a>
             <a href="https://www.instagram.com/tecnologico_traversari/" target="_blank" rel="noopener noreferrer" className="bg-white/10 p-3 rounded-full hover:bg-istpet-gold hover:text-istpet-blue transition-colors flex items-center justify-center">
