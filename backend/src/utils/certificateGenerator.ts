@@ -1,34 +1,29 @@
 import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
-import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
-// Colores ISTPET
-const COLORS = {
-  primary: '#222C57',      // Azul ISTPET
-  secondary: '#C4A857',    // Dorado ISTPET
-  dark: '#0F1829',         // Azul oscuro
-  light: '#F5F7FA',        // Gris claro
-  text: '#1A202C',         // Texto oscuro
-};
-
-// Meses en español
 const MONTHS_ES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
 ];
 
+export interface CertificateOptions {
+  studentName: string;
+  careerName?: string;
+  eventTitle: string;
+  eventDate: Date | string;
+  hours?: number;
+  certificateCode: string;
+  frontendUrl: string;
+  responsibleName?: string;
+  responsibleRole?: string;
+  directorName?: string;
+  directorRole?: string;
+}
+
 export const generateProfessionalCertificate = async (
-  options: {
-    studentName: string;
-    careerName: string;
-    eventTitle: string;
-    eventDate: Date;
-    hours: number;
-    certificateCode: string;
-    frontendUrl: string;
-  }
+  options: CertificateOptions
 ): Promise<Buffer> => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -45,125 +40,67 @@ export const generateProfessionalCertificate = async (
         resolve(pdfData);
       });
 
-      const width = doc.page.width; // 841.89
+      const width = doc.page.width;   // 841.89
       const height = doc.page.height; // 595.28
 
-      // === FONDO BLANCO ELEGANTE ===
-      doc.rect(0, 0, width, height).fill('#FAFAFC');
-
-      // === BORDES DECORATIVOS ===
-      // Borde externo grueso azul
-      doc.strokeColor(COLORS.primary).lineWidth(4);
-      doc.rect(40, 40, width - 80, height - 80).stroke();
-
-      // Borde interno fino dorado
-      doc.strokeColor(COLORS.secondary).lineWidth(1.5);
-      doc.rect(48, 48, width - 96, height - 96).stroke();
-
-      // === ASSETS VISUALES ===
-      const logoPath = path.join(__dirname, '../assets/logo.png');
-      const selloPath = path.join(__dirname, '../assets/sello.png');
-
-      if (fs.existsSync(logoPath)) {
-        // Logo superior centrado
-        doc.image(logoPath, width / 2 - 110, 60, { width: 220 });
+      // === FONDO BASE INSTITUCIONAL ===
+      const bgPath = path.join(__dirname, '../assets/certificate_background.png');
+      if (fs.existsSync(bgPath)) {
+        doc.image(bgPath, 0, 0, { width, height });
       } else {
-        doc.fontSize(24).font('Helvetica-Bold').fillColor(COLORS.primary).text('ISTPET', 0, 80, { align: 'center' });
+        doc.rect(0, 0, width, height).fill('#FAFAFC');
       }
 
-      // === ENCABEZADO ===
-      doc.moveDown(4);
-      doc.fontSize(12).font('Helvetica').fillColor('#666666').text(
-        'El Instituto Superior Tecnológico Público "Eleazar Tovar"',
-        0, 160,
-        { align: 'center' }
-      );
-      doc.fontSize(11).font('Helvetica-Oblique').fillColor('#888888').text(
-        'Otorga el presente',
-        0, 180,
-        { align: 'center' }
-      );
+      // === 1. NOMBRE DEL ALUMNO ===
+      // Se ubica centrado sobre la primera línea dorada
+      const studentNameUpper = (options.studentName || '').toUpperCase();
+      doc.fontSize(22).font('Helvetica-Bold').fillColor('#1A2C56')
+         .text(studentNameUpper, 80, 240, { width: width - 160, align: 'center' });
 
-      // === TÍTULO PRINCIPAL ===
-      doc.fontSize(32).font('Helvetica-Bold').fillColor(COLORS.primary).text(
-        'CERTIFICADO DE PARTICIPACIÓN',
-        0, 215,
-        { align: 'center', characterSpacing: 2 }
-      );
+      // === 2. TÍTULO DEL EVENTO ===
+      // Se ubica centrado sobre la segunda línea dorada
+      const eventTitleText = options.eventTitle || 'Evento Institucional ISTPET';
+      doc.fontSize(17).font('Helvetica-Bold').fillColor('#1A2C56')
+         .text(eventTitleText, 80, 310, { width: width - 160, align: 'center' });
 
-      // === DATOS DEL ALUMNO ===
-      doc.fontSize(12).font('Helvetica').fillColor('#666666').text(
-        'A nombre de:',
-        0, 270,
-        { align: 'center' }
-      );
+      // === 3. FECHA DEL EVENTO ===
+      // Parche sutil para tapar la línea de guiones del fondo
+      doc.rect(140, 373, width - 280, 22).fill('#FAFAFC');
 
-      // Nombre del alumno destacado
-      doc.fontSize(26).font('Helvetica-Bold').fillColor(COLORS.secondary).text(
-        options.studentName.toUpperCase(),
-        0, 290,
-        { align: 'center' }
-      );
+      const dateObj = new Date(options.eventDate);
+      const day = dateObj.getDate();
+      const month = MONTHS_ES[dateObj.getMonth()] || 'marzo';
+      const year = dateObj.getFullYear();
+      const dateText = `Realizado el día ${day} de ${month} de ${year}, en las instalaciones del ISTPET.`;
 
-      // Línea dorada debajo del nombre
-      doc.strokeColor(COLORS.secondary).lineWidth(1);
-      doc.moveTo(width / 2 - 180, 325).lineTo(width / 2 + 180, 325).stroke();
+      doc.fontSize(11.5).font('Helvetica-Oblique').fillColor('#222222')
+         .text(dateText, 80, 377, { width: width - 160, align: 'center' });
 
-      doc.fontSize(12).font('Helvetica').fillColor('#666666').text(
-        `Carrera: ${options.careerName}`,
-        0, 335,
-        { align: 'center' }
-      );
+      // === 4. RESPONSABLE Y DIRECTOR ===
+      const respName = options.responsibleName || 'Coordinación del Evento';
+      const respRole = options.responsibleRole || 'Responsable Académico';
+      const dirName = options.directorName || 'Dirección / Rectorado';
+      const dirRole = options.directorRole || 'ISTPET Excelencia Académica';
 
-      // === DETALLES DEL EVENTO ===
-      doc.fontSize(12).fillColor('#444444').font('Helvetica').text(
-        'Por haber aprobado satisfactoriamente el evento académico:',
-        0, 380,
-        { align: 'center' }
-      );
+      doc.fontSize(9.5).font('Helvetica-Bold').fillColor('#1A2C56')
+         .text(respName, 170, 484, { width: 220, align: 'center' });
+      doc.fontSize(8).font('Helvetica').fillColor('#555555')
+         .text(respRole, 170, 497, { width: 220, align: 'center' });
 
-      doc.fontSize(16).font('Helvetica-Bold').fillColor(COLORS.primary).text(
-        `"${options.eventTitle}"`,
-        0, 400,
-        { align: 'center' }
-      );
+      doc.fontSize(9.5).font('Helvetica-Bold').fillColor('#1A2C56')
+         .text(dirName, 450, 484, { width: 220, align: 'center' });
+      doc.fontSize(8).font('Helvetica').fillColor('#555555')
+         .text(dirRole, 450, 497, { width: 220, align: 'center' });
 
-      const eventDate = new Date(options.eventDate);
-      const dayOfMonth = eventDate.getDate();
-      const month = MONTHS_ES[eventDate.getMonth()];
-      const year = eventDate.getFullYear();
-      const formattedDate = `${dayOfMonth} de ${month} de ${year}`;
-
-      doc.fontSize(11).font('Helvetica').fillColor('#666666').text(
-        `Realizado el ${formattedDate} con una duración de ${options.hours} hora${options.hours > 1 ? 's' : ''} académicas.`,
-        0, 425,
-        { align: 'center' }
-      );
-
-      // === CÓDIGO QR Y VERIFICACIÓN (Abajo a la izquierda) ===
+      // === 5. CÓDIGO QR DE AUTENTICIDAD ===
       const qrUrl = `${options.frontendUrl}/verify/${options.certificateCode}`;
       const qrDataUrl = await QRCode.toDataURL(qrUrl, {
         errorCorrectionLevel: 'H',
-        width: 100,
-        margin: 1
+        margin: 0
       });
 
-      const qrY = height - 160;
-      doc.image(qrDataUrl, 80, qrY, { width: 100, height: 100 });
-
-      // === FIRMA AUTORIZADA (Abajo a la derecha) ===
-      doc.strokeColor(COLORS.primary).lineWidth(1);
-      doc.moveTo(width - 280, height - 90).lineTo(width - 80, height - 90).stroke();
-      doc.fontSize(10).font('Helvetica-Bold').fillColor(COLORS.primary).text(
-        'COORDINACIÓN ACADÉMICA',
-        width - 280, height - 85,
-        { width: 200, align: 'center' }
-      );
-      doc.fontSize(8).font('Helvetica').fillColor('#666666').text(
-        'ISTPET - Excelencia Académica',
-        width - 280, height - 73,
-        { width: 200, align: 'center' }
-      );
+      // Recuadro blanco inferior derecho
+      doc.image(qrDataUrl, 698, 404, { width: 96, height: 96 });
 
       doc.end();
     } catch (error) {

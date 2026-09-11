@@ -3,7 +3,6 @@ import prisma from '../prismaClient';
 import fs from 'fs';
 import path from 'path';
 import { generateProfessionalCertificate } from '../utils/certificateGenerator';
-import { put } from '@vercel/blob';
 
 export const getStudentReport = async (req: any, res: Response): Promise<void> => {
   try {
@@ -193,37 +192,22 @@ export const generateCertificate = async (req: any, res: Response): Promise<void
       frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173'
     });
 
-    // Subir a Vercel Blob
+    // Guardar PDF en la carpeta pública de uploads
     const fileName = `certificate_${certificate.certificateCode}.pdf`;
     let pdfUrl = '';
 
     try {
-      if (process.env.BLOB_READ_WRITE_TOKEN) {
-         const blobResult = await put(`certificados/${fileName}`, pdfBuffer, {
-           access: 'public',
-           contentType: 'application/pdf',
-           addRandomSuffix: false, // Para mantener el nombre exacto
-           allowOverwrite: true // Permite sobrescribir el archivo si el alumno lo vuelve a generar
-         });
-         pdfUrl = blobResult.url;
-      } else {
-         // Fallback local temporal si no hay Blob Token configurado en desarrollo
-         try {
-            const uploadsDir = path.join(__dirname, '../../uploads');
-            if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-            const localPath = path.join(uploadsDir, fileName);
-            fs.writeFileSync(localPath, pdfBuffer);
-            pdfUrl = `/uploads/${fileName}`;
-         } catch (fsError) {
-            console.warn('Filesystem is read-only. Falling back to self-contained Base64 Data URL.');
-            const base64Pdf = pdfBuffer.toString('base64');
-            pdfUrl = `data:application/pdf;base64,${base64Pdf}`;
-         }
+      const certsDir = path.join(__dirname, '../../uploads/certificados');
+      if (!fs.existsSync(certsDir)) {
+        fs.mkdirSync(certsDir, { recursive: true });
       }
-    } catch (blobError: any) {
-      console.error('Error subiendo a Vercel Blob:', blobError);
-      res.status(500).json({ message: `Error Vercel Blob: ${blobError.message}` });
-      return;
+      const localPath = path.join(certsDir, fileName);
+      fs.writeFileSync(localPath, pdfBuffer);
+      pdfUrl = `/uploads/certificados/${fileName}`;
+    } catch (fsError) {
+      console.warn('Fallback a Base64 Data URL por permisos de disco');
+      const base64Pdf = pdfBuffer.toString('base64');
+      pdfUrl = `data:application/pdf;base64,${base64Pdf}`;
     }
 
     // Actualizar base de datos
