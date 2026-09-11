@@ -66,55 +66,54 @@ export const generateProfessionalCertificate = async (
       }
 
       // === 1. NOMBRE DEL ALUMNO ===
-      // Se ubica centrado sobre la primera línea dorada
+      // Ubicado centrado sobre la primera línea dorada (Y = 246 pt)
       const studentNameUpper = (options.studentName || '').toUpperCase();
       doc.fontSize(22).font('Helvetica-Bold').fillColor('#1A2C56')
-         .text(studentNameUpper, 80, 240, { width: width - 160, align: 'center' });
+         .text(studentNameUpper, 60, 246, { width: width - 120, align: 'center' });
 
       // === 2. TÍTULO DEL EVENTO ===
-      // Se ubica centrado sobre la segunda línea dorada
+      // Ubicado centrado sobre la segunda línea dorada (Y = 326 pt)
       const eventTitleText = options.eventTitle || 'Evento Institucional ISTPET';
       doc.fontSize(17).font('Helvetica-Bold').fillColor('#1A2C56')
-         .text(eventTitleText, 80, 310, { width: width - 160, align: 'center' });
+         .text(eventTitleText, 60, 326, { width: width - 120, align: 'center' });
 
       // === 3. FECHA DEL EVENTO ===
-      // Parche sutil para tapar la línea de guiones del fondo
-      doc.rect(140, 373, width - 280, 22).fill('#FAFAFC');
-
+      // Ubicada limpiamente sobre la línea de fecha (Y = 377 pt)
       const dateObj = new Date(options.eventDate);
       const day = dateObj.getDate();
-      const month = MONTHS_ES[dateObj.getMonth()] || 'marzo';
+      const month = MONTHS_ES[dateObj.getMonth()] || 'septiembre';
       const year = dateObj.getFullYear();
       const dateText = `Realizado el día ${day} de ${month} de ${year}, en las instalaciones del ISTPET.`;
 
-      doc.fontSize(11.5).font('Helvetica-Oblique').fillColor('#222222')
-         .text(dateText, 80, 377, { width: width - 160, align: 'center' });
+      doc.fontSize(11).font('Helvetica-Oblique').fillColor('#1A2C56')
+         .text(dateText, 60, 377, { width: width - 120, align: 'center' });
 
       // === 4. RESPONSABLE Y DIRECTOR ===
+      // Nombres posicionados ARRIBA de la línea de firma (Y = 460 pt)
       const respName = options.responsibleName || 'Coordinación del Evento';
       const respRole = options.responsibleRole || 'Responsable Académico';
-      const dirName = options.directorName || 'Dirección / Rectorado';
-      const dirRole = options.directorRole || 'ISTPET Excelencia Académica';
+      const dirName = options.directorName || 'Dirección Institucional';
+      const dirRole = options.directorRole || 'Rectorado ISTPET';
 
       doc.fontSize(9.5).font('Helvetica-Bold').fillColor('#1A2C56')
-         .text(respName, 170, 484, { width: 220, align: 'center' });
-      doc.fontSize(8).font('Helvetica').fillColor('#555555')
-         .text(respRole, 170, 497, { width: 220, align: 'center' });
+         .text(respName, 170, 460, { width: 220, align: 'center' });
+      doc.fontSize(8).font('Helvetica').fillColor('#444444')
+         .text(respRole, 170, 472, { width: 220, align: 'center' });
 
       doc.fontSize(9.5).font('Helvetica-Bold').fillColor('#1A2C56')
-         .text(dirName, 450, 484, { width: 220, align: 'center' });
-      doc.fontSize(8).font('Helvetica').fillColor('#555555')
-         .text(dirRole, 450, 497, { width: 220, align: 'center' });
+         .text(dirName, 450, 460, { width: 220, align: 'center' });
+      doc.fontSize(8).font('Helvetica').fillColor('#444444')
+         .text(dirRole, 450, 472, { width: 220, align: 'center' });
 
       // === 5. CÓDIGO QR DE AUTENTICIDAD ===
+      // Ubicado exactamente dentro del recuadro blanco inferior derecho
       const qrUrl = `${options.frontendUrl}/verify/${options.certificateCode}`;
       const qrDataUrl = await QRCode.toDataURL(qrUrl, {
         errorCorrectionLevel: 'H',
         margin: 0
       });
 
-      // Recuadro blanco inferior derecho
-      doc.image(qrDataUrl, 698, 404, { width: 96, height: 96 });
+      doc.image(qrDataUrl, 696, 406, { width: 92, height: 92 });
 
       doc.end();
     } catch (error) {

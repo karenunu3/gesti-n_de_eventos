@@ -172,6 +172,17 @@ export const generateCertificate = async (req: any, res: Response): Promise<void
       });
     }
 
+    // Determinar la URL pública real para el código QR de verificación
+    const reqHost = req.get('host') || '';
+    let frontendUrl = process.env.FRONTEND_URL;
+    if (!frontendUrl || frontendUrl.includes('localhost')) {
+      if (reqHost && !reqHost.includes('localhost')) {
+        frontendUrl = `https://${reqHost}`;
+      } else {
+        frontendUrl = 'https://gestioneventosistpet.com';
+      }
+    }
+
     // Generar PDF profesional en Buffer
     const pdfBuffer = await generateProfessionalCertificate({
       studentName: `${attendance.user.firstName} ${attendance.user.lastName}`,
@@ -180,7 +191,7 @@ export const generateCertificate = async (req: any, res: Response): Promise<void
       eventDate: attendance.event.startDate,
       hours: attendance.event.hours,
       certificateCode: certificate.certificateCode,
-      frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173'
+      frontendUrl
     });
 
     // Guardar PDF en la carpeta pública de uploads
