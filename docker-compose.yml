@@ -9,6 +9,7 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: adminpassword
       POSTGRES_DB: istpet_db
+      TZ: America/Guayaquil
     ports:
       - "5432:5432"
     volumes:
@@ -33,6 +34,7 @@ services:
       PORT: 4000
       RUN_STANDALONE: "true"
       RUN_SEED: "false"
+      TZ: America/Guayaquil
 
   frontend:
     build:

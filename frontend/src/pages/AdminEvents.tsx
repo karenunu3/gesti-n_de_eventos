@@ -12,7 +12,7 @@ import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import LiveIndicator from '../components/LiveIndicator';
 import Countdown from '../components/Countdown';
 import Toast, { type ToastType } from '../components/Toast';
-import { fmtDate, fmtTime, toDateTimeLocalInput, isBeforeToday } from '../lib/dates';
+import { fmtDate, fmtTime, toDateTimeLocalInput, parseEcuadorDateTimeLocal, isBeforeToday } from '../lib/dates';
 
 // Ubicación y radio fijos del ISTPET (no editables) — definidos en LocationPicker
 
@@ -148,8 +148,8 @@ const AdminEvents = () => {
       // Ubicación y radio son FIJOS del ISTPET — no provienen del formulario.
       const payload = {
         ...formData,
-        startDate: new Date(formData.startDate).toISOString(),
-        endDate: new Date(formData.endDate).toISOString(),
+        startDate: parseEcuadorDateTimeLocal(formData.startDate),
+        endDate: parseEcuadorDateTimeLocal(formData.endDate),
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         hours: parseInt(formData.hours),
         latitude: formData.latitude,
