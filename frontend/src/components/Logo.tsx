@@ -9,7 +9,7 @@ const Logo: React.FC<LogoProps> = ({ variant = 'standard', className = '', ...pr
     <img
       src="/logo.png"
       alt="ISTPET Tecnológico Traversari"
-      className={`object-contain transition-all ${variant === 'light' ? 'brightness-0 invert' : ''} ${className}`}
+      className={`object-contain transition-all ${className}`}
       {...props}
     />
   );

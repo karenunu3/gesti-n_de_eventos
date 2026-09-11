@@ -50,7 +50,9 @@ const Login = () => {
           <div className="relative z-10">
             <div className="text-center mb-10">
               <div className="flex justify-center mb-4">
-                <Logo className="h-20 w-auto drop-shadow-md" variant="light" />
+                <div className="bg-white p-3 rounded-2xl shadow-lg">
+                  <Logo className="h-14 w-auto" />
+                </div>
               </div>
               <h1 className="text-4xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-istpet-gold to-yellow-200">
                 ISTPET Eventos

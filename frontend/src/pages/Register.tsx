@@ -159,7 +159,9 @@ const Register = () => {
           <div className="relative z-10">
             <div className="text-center mb-8">
               <div className="flex justify-center mb-3">
-                <Logo className="h-16 w-auto drop-shadow-md" variant="light" />
+                <div className="bg-white p-2.5 rounded-2xl shadow-lg">
+                  <Logo className="h-12 w-auto" />
+                </div>
               </div>
               <h1 className="text-3xl font-extrabold tracking-tight mb-1 text-transparent bg-clip-text bg-gradient-to-r from-istpet-gold to-yellow-200">
                 Crear Cuenta

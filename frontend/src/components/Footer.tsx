@@ -9,8 +9,8 @@ const Footer = () => {
         {/* Información Principal */}
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-xl">
-              <Logo className="h-16 w-auto" variant="light" />
+            <div className="bg-white p-2.5 rounded-xl inline-block shadow-sm">
+              <Logo className="h-10 w-auto" />
             </div>
           </div>
           <p className="text-sm opacity-80 max-w-xs">
