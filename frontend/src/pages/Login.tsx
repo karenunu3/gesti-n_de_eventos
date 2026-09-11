@@ -152,13 +152,6 @@ const Login = () => {
           
           {/* Información de Contacto Overlay */}
           <div className="flex flex-col md:flex-row justify-between items-end border-t border-white/20 pt-6">
-            <div className="flex justify-between items-center text-sm">
-              <label className="flex items-center text-white/70">
-                <input type="checkbox" className="mr-2 rounded border-white/20 bg-white/5 text-istpet-gold focus:ring-istpet-gold" />
-                Recordarme
-              </label>
-              <Link to="/forgot-password" className="text-istpet-gold hover:underline font-medium">¿Olvidaste tu contraseña?</Link>
-            </div>
             <div className="text-white/90 text-sm space-y-2">
               <p className="flex items-center gap-2 drop-shadow-md">
                 <MapPin size={16} className="text-istpet-gold" />
