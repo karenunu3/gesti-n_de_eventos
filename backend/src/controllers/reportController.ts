@@ -221,6 +221,7 @@ export const generateCertificate = async (req: any, res: Response): Promise<void
     res.status(200).json({
       message: 'Certificado generado con éxito',
       certificateCode: certificate.certificateCode,
+      eventTitle: attendance.event.title,
       pdfUrl
     });
 
@@ -298,8 +299,17 @@ export const exportExcel = async (req: Request, res: Response): Promise<void> =>
       });
     });
 
+    const safeTitle = event.title
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    const fileName = `Reporte_Asistencias_ISTPET_${safeTitle || eventId}.xlsx`;
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=asistencia_evento_${eventId}.xlsx`);
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
 
     await workbook.xlsx.write(res);
     res.end();

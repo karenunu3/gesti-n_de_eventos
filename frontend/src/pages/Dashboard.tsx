@@ -121,7 +121,9 @@ const Dashboard = () => {
           : `${API_URL.replace('/api', '')}${data.pdfUrl}`;
         link.href = downloadUrl;
         link.target = '_blank';
-        link.download = `Certificado_${eventId}.pdf`;
+        const evTitle = data.eventTitle || studentDashData?.upcomingRegistered?.find((e: any) => e.id === eventId)?.title || `Evento_${eventId}`;
+        const safeTitle = evTitle.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+        link.download = `Certificado_ISTPET_${safeTitle}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
