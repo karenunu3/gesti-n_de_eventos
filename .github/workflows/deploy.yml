@@ -19,13 +19,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
 
       - name: Instalar dependencias del Backend
         run: |
           cd backend
-          npm ci
+          npm install
 
       - name: Generar cliente de Prisma y actualizar esquema en BD
         env:
@@ -49,13 +47,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
 
       - name: Instalar y Compilar Backend
         run: |
           cd backend
-          npm ci
+          npm install
           npx prisma generate
           npm run build
 
@@ -80,13 +76,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Instalar dependencias del Frontend
         run: |
           cd frontend
-          npm ci
+          npm install
 
       - name: Compilar Frontend (React 19)
         env:
