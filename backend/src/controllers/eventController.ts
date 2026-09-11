@@ -199,17 +199,35 @@ export const deleteEvent = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-export const generateQrToken = async (req: Request, res: Response): Promise<void> => {
+export const generateQrToken = async (req: any, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const userId = req.user?.id;
     
     const event = await prisma.event.findUnique({
       where: { id: parseInt(id as string) },
-      include: { _count: { select: { attendances: true, registrations: true } } }
+      include: {
+        careers: true,
+        _count: { select: { attendances: true, registrations: true } }
+      }
     });
     if (!event) {
       res.status(404).json({ message: 'Evento no encontrado' });
       return;
+    }
+
+    if (userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true, careerId: true }
+      });
+      if (user?.role === 'DOCENTE' && user?.careerId) {
+        const isAllowed = event.isTransversal || event.careers.some(c => c.id === user.careerId);
+        if (!isAllowed) {
+          res.status(403).json({ message: 'No tienes permiso para gestionar eventos de otras carreras.' });
+          return;
+        }
+      }
     }
 
     // Token válido por 30 segundos
@@ -239,15 +257,15 @@ export const getEvents = async (req: any, res: Response): Promise<void> => {
       select: { role: true, careerId: true }
     });
 
-    // Filtrar eventos según el rol del usuario
-    const whereClause = (user?.role === 'ALUMNO' && user?.careerId)
+    // Filtrar eventos según el rol del usuario (Alumnos y Docentes se filtran por su carrera)
+    const whereClause = ((user?.role === 'ALUMNO' || user?.role === 'DOCENTE') && user?.careerId)
       ? {
           OR: [
             { isTransversal: true }, // Los eventos transversales se muestran a todos
             { careers: { some: { id: user.careerId } } } // O eventos de su carrera
           ]
         }
-      : {}; // Admins, secretarias y docentes ven todos los eventos
+      : {}; // Admins y secretarias ven todos los eventos
 
     const events = await prisma.event.findMany({
       where: whereClause,
