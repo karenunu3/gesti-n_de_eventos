@@ -547,7 +547,7 @@ const AdminCareers = () => {
                         <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Correo *</label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                          <input required type="email" className={`${inputClass} pl-9`} placeholder="correo@istpet.edu.ec" value={form.email} onChange={e => setF('email', e.target.value)} />
+                          <input required type="email" className={`${inputClass} pl-9`} placeholder="Ingresa tu correo electrónico" value={form.email} onChange={e => setF('email', e.target.value)} />
                         </div>
                       </div>
 
