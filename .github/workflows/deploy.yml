@@ -6,7 +6,7 @@ on:
       - main  # Se dispara automáticamente con cada `git push origin main`
 
 jobs:
-  # 1. ETAPA DE BASE DE DATOS (MIGRACIONES AUTOMÁTICAS)
+  # 1. ETAPA DE BASE DE DATOS (SINCRONIZACIÓN AUTOMÁTICA DEL ESQUEMA)
   database-migration:
     name: 🗄️ Aplicar Migraciones en Base de Datos (PostgreSQL)
     runs-on: ubuntu-latest
@@ -18,7 +18,7 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
@@ -27,12 +27,13 @@ jobs:
           cd backend
           npm ci
 
-      - name: Ejecutar Migraciones de Prisma en la Base de Datos Cloud
+      - name: Generar cliente de Prisma y actualizar esquema en BD
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           cd backend
-          npx prisma migrate deploy
+          npx prisma generate
+          npx prisma db push
 
   # 2. ETAPA DE BACKEND (COMPILACIÓN Y DESPLIEGUE A AWS)
   backend-deploy:
@@ -47,7 +48,7 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
@@ -78,7 +79,7 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
