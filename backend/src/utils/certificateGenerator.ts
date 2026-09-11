@@ -44,10 +44,20 @@ export const generateProfessionalCertificate = async (
       const height = doc.page.height; // 595.28
 
       // === FONDO BASE INSTITUCIONAL ===
-      const bgPath = path.join(__dirname, '../assets/certificate_background.png');
-      if (fs.existsSync(bgPath)) {
+      const possibleBgPaths = [
+        path.join(__dirname, '../assets/certificate_background.png'),
+        path.join(__dirname, '../../src/assets/certificate_background.png'),
+        path.join(process.cwd(), 'src/assets/certificate_background.png'),
+        path.join(process.cwd(), 'dist/assets/certificate_background.png'),
+        path.join(process.cwd(), 'backend/src/assets/certificate_background.png'),
+        path.join(process.cwd(), 'backend/dist/assets/certificate_background.png'),
+      ];
+
+      const bgPath = possibleBgPaths.find(p => fs.existsSync(p));
+      if (bgPath) {
         doc.image(bgPath, 0, 0, { width, height });
       } else {
+        console.warn('certificate_background.png no fue encontrado en:', possibleBgPaths);
         doc.rect(0, 0, width, height).fill('#FAFAFC');
       }
 
