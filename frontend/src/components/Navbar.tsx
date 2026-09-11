@@ -3,6 +3,7 @@ import { LogOut, User, Moon, Sun, Monitor, Globe, Calendar, LayoutDashboard, Set
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../lib/ThemeContext';
 import { useState } from 'react';
+import Logo from './Logo';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -68,9 +69,9 @@ const Navbar = () => {
           <div className="flex items-center gap-1 min-w-0">
             <button
               onClick={() => navigate('/dashboard')}
-              className="text-base font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-istpet-blue to-istpet-gold dark:from-istpet-gold dark:to-white shrink-0 mr-2"
+              className="flex items-center shrink-0 mr-3 hover:opacity-90 transition-opacity"
             >
-              ISTPET
+              <Logo className="h-8 w-auto" />
             </button>
 
             <div className="hidden md:flex items-center gap-0.5">
