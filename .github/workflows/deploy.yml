@@ -20,10 +20,8 @@ jobs:
         with:
           node-version: 22
 
-      - name: Instalar dependencias del Backend
-        run: |
-          cd backend
-          npm install
+      - name: Instalar dependencias del Monorepo
+        run: npm install
 
       - name: Generar cliente de Prisma y actualizar esquema en BD
         env:
@@ -48,10 +46,10 @@ jobs:
         with:
           node-version: 22
 
-      - name: Instalar y Compilar Backend
+      - name: Instalar dependencias y Compilar Backend
         run: |
-          cd backend
           npm install
+          cd backend
           npx prisma generate
           npm run build
 
@@ -62,7 +60,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
-  # 3. ETAPA DE FRONTEND (COMPILACIÓN Y DESPLIEGUE A AWS S3 / AMPLIFY)
+  # 3. ETAPA DE FRONTEND (COMPILACIÓN Y DESPLIEGUE A AWS S3)
   frontend-deploy:
     name: 🎨 Desplegar Frontend (React + Vite)
     needs: database-migration
@@ -77,17 +75,13 @@ jobs:
         with:
           node-version: 22
 
-      - name: Instalar dependencias del Frontend
-        run: |
-          cd frontend
-          npm install
+      - name: Instalar dependencias del Monorepo
+        run: npm install
 
       - name: Compilar Frontend (React 19)
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
-        run: |
-          cd frontend
-          npm run build
+        run: npm run build --workspace frontend
 
       - name: Configurar Credenciales de AWS
         uses: aws-actions/configure-aws-credentials@v4
