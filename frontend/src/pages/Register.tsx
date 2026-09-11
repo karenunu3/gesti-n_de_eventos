@@ -68,6 +68,8 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [lopdpAccepted, setLopdpAccepted] = useState(false);
+  const [pendingNotice, setPendingNotice] = useState<string | null>(null);
 
   const strength = getPasswordStrength(form.password);
 
@@ -116,6 +118,10 @@ const Register = () => {
       setError('Las contraseñas no coinciden.');
       return;
     }
+    if (!lopdpAccepted) {
+      setError('Debes aceptar la política de protección de datos personales (LOPDP Ecuador) para registrarte.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -134,9 +140,13 @@ const Register = () => {
         }),
       });
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      navigate('/dashboard');
+      if (data.pendingApproval) {
+        setPendingNotice(data.message || 'Registro exitoso. Tu cuenta se encuentra en revisión por el Administrador.');
+      } else {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -362,6 +372,20 @@ const Register = () => {
                 )}
               </div>
 
+              {/* LOPDP Ley de Protección de Datos Personales del Ecuador */}
+              <div className="flex items-start gap-2 pt-2 pb-1">
+                <input
+                  type="checkbox"
+                  id="lopdp"
+                  checked={lopdpAccepted}
+                  onChange={e => setLopdpAccepted(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-800 text-istpet-gold focus:ring-istpet-gold focus:ring-offset-slate-900 cursor-pointer"
+                />
+                <label htmlFor="lopdp" className="text-xs text-slate-300 leading-tight cursor-pointer">
+                  Acepto el tratamiento de mis datos personales según la <span className="font-semibold text-istpet-gold">Ley Orgánica de Protección de Datos Personales (LOPDP) del Ecuador</span>. Mis datos serán utilizados exclusivamente para gestión académica y de eventos del ISTPET.
+                </label>
+              </div>
+
               {/* Submit */}
               <button
                 type="submit"
@@ -388,6 +412,25 @@ const Register = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal aviso pendiente de aprobación Admin */}
+      {pendingNotice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full text-center space-y-4 shadow-2xl">
+            <div className="w-12 h-12 bg-yellow-500/20 border border-yellow-500/50 rounded-full flex items-center justify-center mx-auto text-yellow-400 text-2xl font-bold">
+              ⏳
+            </div>
+            <h3 className="text-xl font-bold text-white">Registro Pendiente de Aprobación</h3>
+            <p className="text-slate-300 text-sm leading-relaxed">{pendingNotice}</p>
+            <button
+              onClick={() => navigate('/login')}
+              className="w-full py-3 bg-gradient-to-r from-istpet-gold to-yellow-500 text-slate-950 font-bold rounded-xl hover:opacity-90 transition-all"
+            >
+              Ir a Iniciar Sesión
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Panel derecho — imagen institucional */}
       <div className="hidden md:flex flex-1 bg-white dark:bg-slate-900 items-center justify-center relative overflow-hidden transition-colors duration-300">

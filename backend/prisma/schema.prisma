@@ -36,6 +36,7 @@ model User {
   modalities String[] @default([])
   semester   Int?
   photoUrl   String?
+  isApproved Boolean  @default(true)
 
   resetToken       String?
   resetTokenExpiry DateTime?

@@ -15,6 +15,8 @@ export const getUsers = async (req: any, res: any): Promise<void> => {
         role: true,
         career: true,
         modalities: true,
+        semester: true,
+        isApproved: true,
         createdAt: true
       },
       orderBy: { createdAt: 'desc' }
@@ -267,5 +269,26 @@ export const updateUserCareer = async (req: any, res: any): Promise<void> => {
     res.status(200).json(updatedUser);
   } catch (error: any) {
     res.status(500).json({ message: 'Error al actualizar carrera', error: error.message });
+  }
+};
+
+export const toggleUserApproval = async (req: any, res: any): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { isApproved } = req.body;
+    const userId = parseInt(id);
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { isApproved: Boolean(isApproved) },
+      select: { id: true, email: true, isApproved: true }
+    });
+
+    res.status(200).json({
+      message: updatedUser.isApproved ? 'Cuenta aprobada exitosamente.' : 'Cuenta desaprobada.',
+      user: updatedUser
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error al cambiar estado de aprobación del usuario', error: error.message });
   }
 };

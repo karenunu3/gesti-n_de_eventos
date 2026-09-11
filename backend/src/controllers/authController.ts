@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import prisma from '../prismaClient';
 import { generateToken } from '../utils/jwt';
 import { sendMail } from '../utils/mailer';
-import { validateInstitutionalEmail, sendWelcomeEmail } from '../utils/emails';
+import { validateInstitutionalEmail, sendWelcomeEmail, sendPasswordResetEmail } from '../utils/emails';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -41,13 +41,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         careerId: careerId || null,
         modalities: Array.isArray(modalities) ? modalities : [],
         semester: semester || null,
+        isApproved: false, // Requiere aprobación del Administrador
         sessionToken
       }
     });
 
-    const token = generateToken(newUser.id, newUser.role, sessionToken);
-
-    // Correo de bienvenida (no bloquea la respuesta)
+    // Correo de bienvenida inmediato
     sendWelcomeEmail({
       to: newUser.email,
       firstName: newUser.firstName,
@@ -56,7 +55,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       createdByAdmin: false,
     }).catch(() => {});
 
-    res.status(201).json({ user: { id: newUser.id, email: newUser.email, role: newUser.role, firstName: newUser.firstName }, token });
+    res.status(201).json({
+      message: 'Registro exitoso. Tu cuenta ha sido creada y está pendiente de aprobación por el Administrador.',
+      pendingApproval: true
+    });
   } catch (error: any) {
     res.status(500).json({ message: 'Error en el registro', error: error.message });
   }
@@ -75,6 +77,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       res.status(401).json({ message: 'Credenciales inválidas.' });
+      return;
+    }
+
+    // Verificar aprobación por Administrador
+    if (user.isApproved === false) {
+      res.status(403).json({ message: 'Tu cuenta está pendiente de aprobación por el Administrador. Comunícate con la institución para su activación.' });
       return;
     }
 
@@ -127,16 +135,10 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       data: { resetToken, resetTokenExpiry }
     });
 
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
-    const message = `
-      <h1>Recuperación de Contraseña</h1>
-      <p>Hola ${user.firstName},</p>
-      <p>Has solicitado restablecer tu contraseña en el Sistema de Eventos ISTPET. Haz clic en el siguiente enlace para crear una nueva contraseña:</p>
-      <a href="${resetUrl}" style="display:inline-block; padding:10px 20px; background-color:#222C57; color:white; text-decoration:none; border-radius:5px;">Restablecer Contraseña</a>
-      <p>Este enlace expirará en 1 hora.</p>
-    `;
+    const originHeader = (req.headers.origin as string) || (req.get('origin') as string) || process.env.FRONTEND_URL || 'https://gestioneventosistpet.com';
+    const resetUrl = `${originHeader.replace(/\/$/, '')}/reset-password/${resetToken}`;
 
-    await sendMail(user.email, 'Recuperación de Contraseña - ISTPET', message);
+    await sendPasswordResetEmail({ to: user.email, firstName: user.firstName, resetUrl });
     res.status(200).json({ message: 'Correo enviado. Revisa tu bandeja de entrada.' });
   } catch (error: any) {
     console.error('❌ forgotPassword error:', error);

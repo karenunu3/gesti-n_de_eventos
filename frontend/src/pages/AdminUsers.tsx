@@ -218,6 +218,19 @@ const AdminUsers = () => {
     }
   };
 
+  const handleToggleApproval = async (userId: number, currentApproved: boolean) => {
+    try {
+      const res = await fetchApi(`/users/${userId}/approve`, {
+        method: 'PUT',
+        body: JSON.stringify({ isApproved: !currentApproved })
+      });
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, isApproved: !currentApproved } : u));
+      setToast({ type: 'success', text: res.message || 'Estado de aprobación actualizado' });
+    } catch (err: any) {
+      setToast({ type: 'error', text: err.message });
+    }
+  };
+
   const getStudentCategory = (user: any) => {
     if (user.role !== 'ALUMNO') return null;
     const twoYearsAgo = new Date();
@@ -363,7 +376,7 @@ const AdminUsers = () => {
           <table className="w-full">
             <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
               <tr>
-                {['Nombre', 'Email', 'CI / Pasaporte', 'Carrera', 'Rol', 'Cambiar Rol', ''].map(h => (
+                {['Nombre', 'Email', 'CI / Pasaporte', 'Carrera', 'Rol', 'Aprobación Admin', 'Cambiar Rol', ''].map(h => (
                   <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -372,6 +385,7 @@ const AdminUsers = () => {
               {filteredUsers.map(u => {
                 const isAdmin = u.role === 'ADMIN';
                 const cat = getStudentCategory(u);
+                const isApproved = u.isApproved !== false;
                 return (
                   <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                     <td className="px-5 py-4 font-medium text-slate-800 dark:text-slate-100">
@@ -384,6 +398,11 @@ const AdminUsers = () => {
                               : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                           }`}>
                             Alumno {cat}
+                          </span>
+                        )}
+                        {u.semester && (
+                          <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold">
+                            {u.semester}° Sem.
                           </span>
                         )}
                       </div>
@@ -428,6 +447,31 @@ const AdminUsers = () => {
                         <RoleIcon role={u.role} />
                         {ROLE_LABELS[u.role] || u.role}
                       </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      {isAdmin ? (
+                        <span className="text-xs font-semibold text-green-600 dark:text-green-400">Activo</span>
+                      ) : (
+                        <button
+                          onClick={() => handleToggleApproval(u.id, isApproved)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all border ${
+                            isApproved
+                              ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100'
+                              : 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 text-amber-700 dark:text-amber-400 hover:bg-amber-100 animate-pulse'
+                          }`}
+                          title={isApproved ? 'Clic para desaprobar cuenta' : 'Clic para APROBAR esta cuenta'}
+                        >
+                          {isApproved ? (
+                            <>
+                              <Check size={13} /> Aprobado
+                            </>
+                          ) : (
+                            <>
+                              <ShieldAlert size={13} /> Aprobar
+                            </>
+                          )}
+                        </button>
+                      )}
                     </td>
                     <td className="px-5 py-4">
                       {isAdmin ? (

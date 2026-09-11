@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import {
-  getUsers, createUser, deleteUser, updateUserRole, updateUserCareer,
+  getUsers, createUser, deleteUser, updateUserRole, updateUserCareer, toggleUserApproval,
   getMyProfile, updateMyProfile, changeMyPassword,
 } from '../controllers/userController';
 import { protect, restrictTo } from '../middlewares/authMiddleware';
@@ -18,5 +18,6 @@ router.post('/', protect, restrictTo('ADMIN', 'SECRETARIA'), createUser);
 router.delete('/:id', protect, restrictTo('ADMIN', 'SECRETARIA'), deleteUser);
 router.put('/:id/role', protect, restrictTo('ADMIN', 'SECRETARIA'), updateUserRole);
 router.put('/:id/career', protect, restrictTo('ADMIN', 'SECRETARIA'), updateUserCareer);
+router.put('/:id/approve', protect, restrictTo('ADMIN', 'SECRETARIA'), toggleUserApproval);
 
 export default router;
