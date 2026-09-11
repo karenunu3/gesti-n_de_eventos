@@ -382,7 +382,17 @@ const Register = () => {
                   className="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-800 text-istpet-gold focus:ring-istpet-gold focus:ring-offset-slate-900 cursor-pointer"
                 />
                 <label htmlFor="lopdp" className="text-xs text-slate-300 leading-tight cursor-pointer">
-                  Acepto el tratamiento de mis datos personales según la <span className="font-semibold text-istpet-gold">Ley Orgánica de Protección de Datos Personales (LOPDP) del Ecuador</span>. Mis datos serán utilizados exclusivamente para gestión académica y de eventos del ISTPET.
+                  Acepto el tratamiento de mis datos personales según la{' '}
+                  <a
+                    href="https://www.gob.ec/regulaciones/ley-organica-proteccion-datos-personales"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    className="font-semibold text-istpet-gold hover:underline underline-offset-2"
+                  >
+                    Ley Orgánica de Protección de Datos Personales (LOPDP) del Ecuador
+                  </a>
+                  . Mis datos serán utilizados exclusivamente para gestión académica y de eventos del ISTPET.
                 </label>
               </div>
 
