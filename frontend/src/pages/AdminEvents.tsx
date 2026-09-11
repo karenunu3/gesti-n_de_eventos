@@ -50,7 +50,10 @@ const AdminEvents = () => {
 
   const [formData, setFormData] = useState({
     title: '', description: '', startDate: '', endDate: '', capacity: '', hours: '',
-    isTransversal: true, careers: [] as number[]
+    isTransversal: true, careers: [] as number[],
+    latitude: ISTPET_LAT,
+    longitude: ISTPET_LNG,
+    radiusMeters: 100
   });
 
   useEffect(() => {
@@ -149,9 +152,9 @@ const AdminEvents = () => {
         endDate: new Date(formData.endDate).toISOString(),
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         hours: parseInt(formData.hours),
-        latitude: ISTPET_LAT,
-        longitude: ISTPET_LNG,
-        radiusMeters: ISTPET_RADIUS_METERS,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        radiusMeters: Number(formData.radiusMeters) || 100,
         careers: formData.isTransversal ? [] : formData.careers,
       };
       if (editingEventId) {
@@ -182,14 +185,17 @@ const AdminEvents = () => {
     }
     setFormData({
       title: event.title,
-      description: event.description,
+      description: event.description || '',
       // Usar helper que convierte UTC → hora local correcta para el input
       startDate: toDateTimeLocalInput(event.startDate),
       endDate: toDateTimeLocalInput(event.endDate),
       capacity: event.capacity ? event.capacity.toString() : '',
       hours: event.hours.toString(),
       isTransversal: event.isTransversal,
-      careers: event.careers ? event.careers.map((c: any) => c.id) : []
+      careers: event.careers ? event.careers.map((c: any) => c.id) : [],
+      latitude: event.latitude ?? ISTPET_LAT,
+      longitude: event.longitude ?? ISTPET_LNG,
+      radiusMeters: event.radiusMeters ?? 100
     });
     setEditingEventId(event.id);
     setShowForm(true);
@@ -198,7 +204,11 @@ const AdminEvents = () => {
   const closeForm = () => {
     setShowForm(false);
     setEditingEventId(null);
-    setFormData({ title: '', description: '', startDate: '', endDate: '', capacity: '', hours: '', isTransversal: true, careers: [] });
+    setFormData({
+      title: '', description: '', startDate: '', endDate: '', capacity: '', hours: '',
+      isTransversal: true, careers: [],
+      latitude: ISTPET_LAT, longitude: ISTPET_LNG, radiusMeters: 100
+    });
   };
 
   const openAudit = async (event: any) => {
@@ -491,7 +501,13 @@ const AdminEvents = () => {
               </div>
               <div className="md:col-span-2 border-t border-slate-100 dark:border-slate-700 pt-6">
                 <h3 className="font-semibold flex items-center gap-2 mb-4 text-slate-800 dark:text-slate-200"><Map size={18} className="text-istpet-blue dark:text-istpet-gold" /> Área de Asistencia (Geocerca)</h3>
-                <LocationPicker />
+                <LocationPicker
+                  latitude={formData.latitude}
+                  longitude={formData.longitude}
+                  radiusMeters={formData.radiusMeters}
+                  isEditable={user?.role === 'ADMIN'}
+                  onChange={(lat, lng, radius) => setFormData(prev => ({ ...prev, latitude: lat, longitude: lng, radiusMeters: radius }))}
+                />
               </div>
               <div className="md:col-span-2 border-t border-slate-100 dark:border-slate-700 pt-6">
                 <h3 className="font-semibold flex items-center gap-2 mb-4 text-slate-800 dark:text-slate-200"><GraduationCap size={18} className="text-istpet-blue dark:text-istpet-gold" /> Audiencia del Evento</h3>
