@@ -85,14 +85,40 @@ const AdminCareers = () => {
 
   const strength = getPasswordStrength(form.password);
 
+  const currentUser = (() => {
+    try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; }
+  })();
+  const canDelete = Boolean(currentUser && ['ADMIN', 'SECRETARIA'].includes(currentUser.role));
+  const [deletingCareerId, setDeletingCareerId] = useState<number | null>(null);
+
   const loadData = async () => {
     try {
+      const deletedNames: string[] = JSON.parse(localStorage.getItem('istpet_deleted_careers') || '[]');
+      const customModalities: Record<string, ModalityId> = JSON.parse(localStorage.getItem('istpet_custom_career_modalities') || '{}');
+
+      if (deletedNames.length > 0) {
+        MODALITIES.forEach(m => {
+          m.careerNames = m.careerNames.filter(n => !deletedNames.includes(n));
+        });
+      }
+
+      Object.entries(customModalities).forEach(([cName, modId]) => {
+        if (!deletedNames.includes(cName)) {
+          const mod = MODALITIES.find(m => m.id === modId);
+          if (mod && !mod.careerNames.includes(cName)) {
+            mod.careerNames.push(cName);
+          }
+        }
+      });
+
       let [cData, uData] = await Promise.all([fetchApi('/careers'), fetchApi('/users')]);
 
-      // Auto-sembrado: crear cualquier carrera de MODALITIES que no exista en BD
+      // Auto-sembrado: crear cualquier carrera de MODALITIES que no exista en BD y no haya sido eliminada
       const dbNames = new Set(cData.map((c: any) => c.name));
       const expected = new Set<string>();
-      MODALITIES.forEach(m => m.careerNames.forEach(n => expected.add(n)));
+      MODALITIES.forEach(m => m.careerNames.forEach(n => {
+        if (!deletedNames.includes(n)) expected.add(n);
+      }));
       const missing = [...expected].filter(n => !dbNames.has(n));
 
       if (missing.length > 0) {
@@ -162,18 +188,87 @@ const AdminCareers = () => {
     try {
       // 1. Crear carrera en BD
       await fetchApi('/careers', { method: 'POST', body: JSON.stringify({ name }) });
-      // 2. Añadir el nombre a la modalidad seleccionada en MODALITIES (en memoria — persiste mientras la sesión)
+
+      // 2. Si estaba en lista de eliminadas, removerla
+      const deletedNames: string[] = JSON.parse(localStorage.getItem('istpet_deleted_careers') || '[]');
+      if (deletedNames.some(n => n.toLowerCase() === name.toLowerCase())) {
+        const updated = deletedNames.filter(n => n.toLowerCase() !== name.toLowerCase());
+        localStorage.setItem('istpet_deleted_careers', JSON.stringify(updated));
+      }
+
+      // 3. Guardar modalidad asignada
+      const customModalities: Record<string, ModalityId> = JSON.parse(localStorage.getItem('istpet_custom_career_modalities') || '{}');
+      customModalities[name] = newCareerModality;
+      localStorage.setItem('istpet_custom_career_modalities', JSON.stringify(customModalities));
+
+      // 4. Añadir el nombre a la modalidad seleccionada en MODALITIES
       const mod = MODALITIES.find(m => m.id === newCareerModality);
       if (mod && !mod.careerNames.includes(name)) mod.careerNames.push(name);
-      // 3. Recargar y cerrar
+
+      // 5. Recargar y cerrar
       await loadData();
       setShowNewCareerModal(false);
       setNewCareerName('');
       setNewCareerModality('');
+      setToast({ type: 'success', text: 'Carrera creada exitosamente.' });
     } catch (err: any) {
       setNewCareerError(err.message || 'Error al crear la carrera');
     } finally {
       setNewCareerLoading(false);
+    }
+  };
+
+  const handleDeleteCareer = async (careerOrName: any, careerName: string) => {
+    if (!canDelete) {
+      setToast({ type: 'error', text: 'Solo Administrador y Secretaría tienen permiso para eliminar carreras.' });
+      return;
+    }
+
+    const name = typeof careerOrName === 'string' ? careerOrName : (careerOrName?.name || careerName);
+    const dbCareer = typeof careerOrName === 'object' && careerOrName?.id ? careerOrName : careers.find(c => c.name === name);
+
+    const confirmed = window.confirm(
+      `¿Estás seguro de que deseas eliminar la carrera "${name}"?\n\nEsta acción eliminará la carrera y desvinculará a los alumnos y docentes asociados.`
+    );
+    if (!confirmed) return;
+
+    if (dbCareer?.id) setDeletingCareerId(dbCareer.id);
+
+    try {
+      if (dbCareer?.id) {
+        await fetchApi(`/careers/${dbCareer.id}`, { method: 'DELETE' });
+      }
+
+      // Guardar en la lista de carreras eliminadas en localStorage
+      const deletedNames: string[] = JSON.parse(localStorage.getItem('istpet_deleted_careers') || '[]');
+      if (!deletedNames.includes(name)) {
+        deletedNames.push(name);
+        localStorage.setItem('istpet_deleted_careers', JSON.stringify(deletedNames));
+      }
+
+      // Remover de personalizadas si estaba guardada
+      const customModalities: Record<string, ModalityId> = JSON.parse(localStorage.getItem('istpet_custom_career_modalities') || '{}');
+      if (customModalities[name]) {
+        delete customModalities[name];
+        localStorage.setItem('istpet_custom_career_modalities', JSON.stringify(customModalities));
+      }
+
+      // Remover de las modalidades en memoria
+      MODALITIES.forEach(m => {
+        m.careerNames = m.careerNames.filter(n => n !== name);
+      });
+
+      // Si el modal de la carrera estaba abierto, cerrarlo
+      if (selectedCareer && (selectedCareer.id === dbCareer?.id || selectedCareer.name === name)) {
+        closeModal();
+      }
+
+      setToast({ type: 'success', text: `Carrera "${name}" eliminada con éxito.` });
+      await loadData();
+    } catch (err: any) {
+      setToast({ type: 'error', text: 'Error al eliminar carrera: ' + (err.message || 'Error en el servidor') });
+    } finally {
+      setDeletingCareerId(null);
     }
   };
 
@@ -323,14 +418,27 @@ const AdminCareers = () => {
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => dbCareer && openCard(dbCareer, mod.id)}
-                        disabled={!dbCareer}
-                        className="w-full sm:w-auto px-4 py-2.5 bg-istpet-blue hover:bg-istpet-blue-light dark:bg-istpet-gold dark:hover:bg-istpet-gold-light text-white dark:text-slate-900 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-                        title={dbCareer ? 'Gestionar' : 'Carrera no encontrada en BD'}
-                      >
-                        <Settings size={16} /> Gestionar
-                      </button>
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <button
+                          onClick={() => dbCareer && openCard(dbCareer, mod.id)}
+                          disabled={!dbCareer}
+                          className="flex-1 sm:flex-none px-4 py-2.5 bg-istpet-blue hover:bg-istpet-blue-light dark:bg-istpet-gold dark:hover:bg-istpet-gold-light text-white dark:text-slate-900 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50 text-sm shadow-sm"
+                          title={dbCareer ? 'Gestionar' : 'Carrera no encontrada en BD'}
+                        >
+                          <Settings size={16} /> Gestionar
+                        </button>
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDeleteCareer(dbCareer, careerName)}
+                            disabled={deletingCareerId === dbCareer?.id}
+                            className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-slate-200 dark:border-slate-600 hover:border-red-300 dark:hover:border-red-800 rounded-xl transition-colors disabled:opacity-50 shadow-sm"
+                            title="Eliminar carrera"
+                            aria-label={`Eliminar carrera ${careerName}`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -424,9 +532,22 @@ const AdminCareers = () => {
                   Modalidad: <span className="font-semibold text-istpet-blue dark:text-istpet-gold">{MODALITIES.find(m => m.id === selectedModality)?.name}</span>
                 </p>
               </div>
-              <button onClick={closeModal} aria-label="Cerrar" className="flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-white hover:bg-red-500 dark:hover:bg-red-600 transition-colors">
-                <X size={22} />
-              </button>
+              <div className="flex items-center gap-2">
+                {canDelete && (
+                  <button
+                    onClick={() => handleDeleteCareer(selectedCareer, selectedCareer.name)}
+                    disabled={deletingCareerId === selectedCareer?.id}
+                    className="px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                    title="Eliminar esta carrera"
+                  >
+                    <Trash2 size={15} />
+                    <span className="hidden sm:inline">Eliminar Carrera</span>
+                  </button>
+                )}
+                <button onClick={closeModal} aria-label="Cerrar" className="flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-white hover:bg-red-500 dark:hover:bg-red-600 transition-colors">
+                  <X size={22} />
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-hidden flex flex-col md:flex-row">

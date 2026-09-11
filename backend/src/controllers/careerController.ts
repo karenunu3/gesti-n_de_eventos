@@ -37,7 +37,26 @@ export const createCareer = async (req: Request, res: Response): Promise<void> =
 export const deleteCareer = async (req: Request, res: Response): Promise<void> => {
   try {
     const id = parseInt(req.params.id as string);
-    await prisma.career.delete({ where: { id } });
+    if (isNaN(id)) {
+      res.status(400).json({ message: 'ID de carrera inválido' });
+      return;
+    }
+
+    const existing = await prisma.career.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ message: 'Carrera no encontrada' });
+      return;
+    }
+
+    // Desvincular usuarios asignados a esta carrera antes de eliminarla
+    await prisma.$transaction([
+      prisma.user.updateMany({
+        where: { careerId: id },
+        data: { careerId: null }
+      }),
+      prisma.career.delete({ where: { id } })
+    ]);
+
     res.status(200).json({ message: 'Carrera eliminada con éxito' });
   } catch (error: any) {
     res.status(500).json({ message: 'Error al eliminar carrera', error: error.message });
