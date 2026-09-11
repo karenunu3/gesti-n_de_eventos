@@ -262,23 +262,27 @@ export const exportExcel = async (req: Request, res: Response): Promise<void> =>
     const attendances = await prisma.eventAttendance.findMany({
       where: { eventId },
       include: {
-        user: { select: { firstName: true, lastName: true, dni: true, email: true, career: { select: { name: true } } } }
+        user: { select: { firstName: true, lastName: true, dni: true, email: true, semester: true, career: { select: { name: true } } } }
       },
       orderBy: { recordedAt: 'desc' }
     });
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Asistencia');
+    const worksheet = workbook.addWorksheet('Asistencias ISTPET');
 
     worksheet.columns = [
-      { header: 'CI', key: 'dni', width: 15 },
+      { header: 'CI / Pasaporte', key: 'dni', width: 16 },
       { header: 'Nombres', key: 'firstName', width: 20 },
       { header: 'Apellidos', key: 'lastName', width: 20 },
-      { header: 'Email', key: 'email', width: 30 },
+      { header: 'Email', key: 'email', width: 28 },
       { header: 'Carrera', key: 'career', width: 25 },
-      { header: 'Fecha Registro', key: 'recordedAt', width: 20 },
-      { header: 'Estado', key: 'isValid', width: 15 }
+      { header: 'Nivel / Semestre', key: 'semester', width: 16 },
+      { header: 'Hora Entrada', key: 'recordedAt', width: 22 },
+      { header: 'Hora Salida', key: 'checkOutAt', width: 22 },
+      { header: 'Estado', key: 'isValid', width: 18 }
     ];
+
+    const tzOption = { timeZone: 'America/Guayaquil', dateStyle: 'short', timeStyle: 'short' } as const;
 
     attendances.forEach((att: any) => {
       worksheet.addRow({
@@ -286,8 +290,10 @@ export const exportExcel = async (req: Request, res: Response): Promise<void> =>
         firstName: att.user.firstName,
         lastName: att.user.lastName,
         email: att.user.email,
-        career: att.user.career?.name || 'N/A',
-        recordedAt: new Date(att.recordedAt).toLocaleString(),
+        career: att.user.career?.name || 'Transversal / N/A',
+        semester: att.user.semester ? `${att.user.semester}° Semestre` : 'N/A',
+        recordedAt: att.recordedAt ? new Date(att.recordedAt).toLocaleString('es-EC', tzOption) : 'N/A',
+        checkOutAt: att.checkOutAt ? new Date(att.checkOutAt).toLocaleString('es-EC', tzOption) : 'Pendiente',
         isValid: att.isValid ? 'VÁLIDO' : 'INVÁLIDO (Revisar)'
       });
     });
