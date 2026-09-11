@@ -152,14 +152,14 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
 
     // Auto-purga: si el evento es específico, eliminar inscritos cuya carrera ya no esté permitida
     if (!isTransversal) {
-      const allowedCareerIds = event.careers.map(c => c.id);
+      const allowedCareerIds = event.careers.map((c: any) => c.id);
       const registrations = await prisma.eventRegistration.findMany({
         where: { eventId: eventIdNum },
         include: { user: { select: { id: true, role: true, careerId: true } } }
       });
       const toRemove = registrations
-        .filter(r => r.user.role === 'ALUMNO' && (!r.user.careerId || !allowedCareerIds.includes(r.user.careerId)))
-        .map(r => r.id);
+        .filter((r: any) => r.user.role === 'ALUMNO' && (!r.user.careerId || !allowedCareerIds.includes(r.user.careerId)))
+        .map((r: any) => r.id);
       if (toRemove.length > 0) {
         await prisma.eventRegistration.deleteMany({ where: { id: { in: toRemove } } });
       }
@@ -405,7 +405,7 @@ export const registerToEvent = async (req: any, res: Response): Promise<void> =>
       });
       // Solo aplicamos esta restricción a alumnos
       if (userInfo?.role === 'ALUMNO') {
-        const allowedCareerIds = event.careers.map(c => c.id);
+        const allowedCareerIds = event.careers.map((c: any) => c.id);
         if (!userInfo.careerId || !allowedCareerIds.includes(userInfo.careerId)) {
           res.status(403).json({ message: 'Este evento es específico para otras carreras. No estás autorizado a inscribirte.' });
           return;

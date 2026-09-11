@@ -6,8 +6,8 @@ import path from 'path';
 
 // Colores ISTPET
 const COLORS = {
-  primary: '#1F295B',      // Azul ISTPET
-  secondary: '#D4AF37',    // Dorado ISTPET
+  primary: '#222C57',      // Azul ISTPET
+  secondary: '#C4A857',    // Dorado ISTPET
   dark: '#0F1829',         // Azul oscuro
   light: '#F5F7FA',        // Gris claro
   text: '#1A202C',         // Texto oscuro
@@ -53,11 +53,11 @@ export const generateProfessionalCertificate = async (
 
       // === BORDES DECORATIVOS ===
       // Borde externo grueso azul
-      doc.strokeColor('#1F295B').lineWidth(4);
+      doc.strokeColor(COLORS.primary).lineWidth(4);
       doc.rect(40, 40, width - 80, height - 80).stroke();
 
       // Borde interno fino dorado
-      doc.strokeColor('#D4AF37').lineWidth(1.5);
+      doc.strokeColor(COLORS.secondary).lineWidth(1.5);
       doc.rect(48, 48, width - 96, height - 96).stroke();
 
       // === ASSETS VISUALES ===
@@ -68,7 +68,7 @@ export const generateProfessionalCertificate = async (
         // Logo superior centrado
         doc.image(logoPath, width / 2 - 110, 60, { width: 220 });
       } else {
-        doc.fontSize(24).font('Helvetica-Bold').fillColor('#1F295B').text('ISTPET', 0, 80, { align: 'center' });
+        doc.fontSize(24).font('Helvetica-Bold').fillColor(COLORS.primary).text('ISTPET', 0, 80, { align: 'center' });
       }
 
       // === ENCABEZADO ===
@@ -85,7 +85,7 @@ export const generateProfessionalCertificate = async (
       );
 
       // === TÍTULO PRINCIPAL ===
-      doc.fontSize(32).font('Helvetica-Bold').fillColor('#1F295B').text(
+      doc.fontSize(32).font('Helvetica-Bold').fillColor(COLORS.primary).text(
         'CERTIFICADO DE PARTICIPACIÓN',
         0, 215,
         { align: 'center', characterSpacing: 2 }
@@ -99,14 +99,14 @@ export const generateProfessionalCertificate = async (
       );
 
       // Nombre del alumno destacado
-      doc.fontSize(26).font('Helvetica-Bold').fillColor('#D4AF37').text(
+      doc.fontSize(26).font('Helvetica-Bold').fillColor(COLORS.secondary).text(
         options.studentName.toUpperCase(),
         0, 290,
         { align: 'center' }
       );
 
       // Línea dorada debajo del nombre
-      doc.strokeColor('#D4AF37').lineWidth(1);
+      doc.strokeColor(COLORS.secondary).lineWidth(1);
       doc.moveTo(width / 2 - 180, 325).lineTo(width / 2 + 180, 325).stroke();
 
       doc.fontSize(12).font('Helvetica').fillColor('#666666').text(
@@ -122,7 +122,7 @@ export const generateProfessionalCertificate = async (
         { align: 'center' }
       );
 
-      doc.fontSize(16).font('Helvetica-Bold').fillColor('#1F295B').text(
+      doc.fontSize(16).font('Helvetica-Bold').fillColor(COLORS.primary).text(
         `"${options.eventTitle}"`,
         0, 400,
         { align: 'center' }
@@ -152,9 +152,9 @@ export const generateProfessionalCertificate = async (
       doc.image(qrDataUrl, 80, qrY, { width: 100, height: 100 });
 
       // === FIRMA AUTORIZADA (Abajo a la derecha) ===
-      doc.strokeColor('#1F295B').lineWidth(1);
+      doc.strokeColor(COLORS.primary).lineWidth(1);
       doc.moveTo(width - 280, height - 90).lineTo(width - 80, height - 90).stroke();
-      doc.fontSize(10).font('Helvetica-Bold').fillColor('#1F295B').text(
+      doc.fontSize(10).font('Helvetica-Bold').fillColor(COLORS.primary).text(
         'COORDINACIÓN ACADÉMICA',
         width - 280, height - 85,
         { width: 200, align: 'center' }

@@ -37,7 +37,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         firstName,
         lastName,
         dni,
-        role: role || 'ALUMNO',
+        role: 'ALUMNO', // Forzado para evitar escalada de privilegios en registro público
         careerId: careerId || null,
         modalities: Array.isArray(modalities) ? modalities : [],
         semester: semester || null,
@@ -132,7 +132,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       <h1>Recuperación de Contraseña</h1>
       <p>Hola ${user.firstName},</p>
       <p>Has solicitado restablecer tu contraseña en el Sistema de Eventos ISTPET. Haz clic en el siguiente enlace para crear una nueva contraseña:</p>
-      <a href="${resetUrl}" style="display:inline-block; padding:10px 20px; background-color:#1F295B; color:white; text-decoration:none; border-radius:5px;">Restablecer Contraseña</a>
+      <a href="${resetUrl}" style="display:inline-block; padding:10px 20px; background-color:#222C57; color:white; text-decoration:none; border-radius:5px;">Restablecer Contraseña</a>
       <p>Este enlace expirará en 1 hora.</p>
     `;
 

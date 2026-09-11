@@ -59,7 +59,7 @@ const LocationPicker: React.FC<LocationPickerProps> = () => {
           <Circle
             center={position}
             radius={ISTPET_RADIUS_METERS}
-            pathOptions={{ color: '#1F295B', fillColor: '#1F295B', fillOpacity: 0.2 }}
+            pathOptions={{ color: '#222C57', fillColor: '#222C57', fillOpacity: 0.2 }}
           />
         </MapContainer>
       </div>

@@ -12,11 +12,11 @@ router.get('/me', protect, getMyProfile);
 router.put('/me', protect, updateMyProfile);
 router.put('/me/password', protect, changeMyPassword);
 
-// Admin
-router.get('/', protect, restrictTo('ADMIN'), getUsers);
-router.post('/', protect, restrictTo('ADMIN'), createUser);
-router.delete('/:id', protect, restrictTo('ADMIN'), deleteUser);
-router.put('/:id/role', protect, restrictTo('ADMIN'), updateUserRole);
-router.put('/:id/career', protect, restrictTo('ADMIN'), updateUserCareer);
+// Admin y Secretaria
+router.get('/', protect, restrictTo('ADMIN', 'SECRETARIA'), getUsers);
+router.post('/', protect, restrictTo('ADMIN', 'SECRETARIA'), createUser);
+router.delete('/:id', protect, restrictTo('ADMIN', 'SECRETARIA'), deleteUser);
+router.put('/:id/role', protect, restrictTo('ADMIN', 'SECRETARIA'), updateUserRole);
+router.put('/:id/career', protect, restrictTo('ADMIN', 'SECRETARIA'), updateUserCareer);
 
 export default router;

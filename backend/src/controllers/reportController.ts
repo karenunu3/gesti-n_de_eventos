@@ -15,7 +15,7 @@ export const getStudentReport = async (req: any, res: Response): Promise<void> =
       include: { event: true }
     });
 
-    const totalHours = attendances.reduce((sum, att) => sum + att.event.hours, 0);
+    const totalHours = attendances.reduce((sum: number, att: any) => sum + att.event.hours, 0);
 
     res.status(200).json({ attendances, totalHours });
   } catch (error: any) {
@@ -47,7 +47,7 @@ export const getStudentDashboard = async (req: any, res: Response): Promise<void
       include: { event: true },
       orderBy: { recordedAt: 'desc' }
     });
-    const totalHours = attendances.reduce((sum, att) => sum + att.event.hours, 0);
+    const totalHours = attendances.reduce((sum: number, att: any) => sum + att.event.hours, 0);
 
     // 3) Eventos próximos donde el alumno está inscrito (no han terminado)
     const upcomingRegistered = await prisma.event.findMany({
@@ -81,7 +81,7 @@ export const getStudentDashboard = async (req: any, res: Response): Promise<void
       take: 10
     });
     // Filtrar los que aún tengan cupo
-    const suggested = suggestedRaw.filter(e =>
+    const suggested = suggestedRaw.filter((e: any) =>
       !e.capacity || e._count.registrations < e.capacity
     ).slice(0, 6);
 
@@ -90,10 +90,10 @@ export const getStudentDashboard = async (req: any, res: Response): Promise<void
       where: { userId },
       select: { eventId: true }
     });
-    const certifiedEventIds = new Set(certificates.map(c => c.eventId));
+    const certifiedEventIds = new Set(certificates.map((c: any) => c.eventId));
 
     // 6) Asistencias completas (check-in + check-out válidos) sin certificado aún
-    const pendingCertificates = attendances.filter(att =>
+    const pendingCertificates = attendances.filter((att: any) =>
       att.isValid && att.checkOutAt && att.isCheckOutValid && !certifiedEventIds.has(att.eventId)
     );
 
@@ -294,7 +294,7 @@ export const exportExcel = async (req: Request, res: Response): Promise<void> =>
       { header: 'Estado', key: 'isValid', width: 15 }
     ];
 
-    attendances.forEach(att => {
+    attendances.forEach((att: any) => {
       worksheet.addRow({
         dni: att.user.dni,
         firstName: att.user.firstName,
@@ -325,7 +325,7 @@ export const getSurveyResults = async (req: Request, res: Response): Promise<voi
       orderBy: { createdAt: 'desc' }
     });
     const avgRating = surveys.length > 0
-      ? Math.round((surveys.reduce((sum, s) => sum + s.rating, 0) / surveys.length) * 10) / 10
+      ? Math.round((surveys.reduce((sum: number, s: any) => sum + s.rating, 0) / surveys.length) * 10) / 10
       : 0;
     res.status(200).json({ surveys, avgRating, total: surveys.length });
   } catch (error: any) {
