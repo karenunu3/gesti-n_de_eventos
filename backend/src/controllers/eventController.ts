@@ -46,6 +46,19 @@ export const createEvent = async (req: any, res: Response): Promise<void> => {
       return;
     }
 
+    // 4. Validar que la duración calculada coincida exactamente con las horas a certificar
+    const durationMinutes = Math.round(durationMs / (1000 * 60));
+    const expectedMinutes = hours * 60;
+    if (Math.abs(durationMinutes - expectedMinutes) > 2) {
+      const durationFormatted = durationMinutes % 60 === 0 
+        ? `${durationMinutes / 60} ${durationMinutes / 60 === 1 ? 'hora' : 'horas'}`
+        : `${(durationMinutes / 60).toFixed(1)} horas`;
+      res.status(400).json({ 
+        message: `La duración del evento (${durationFormatted}) no coincide con el número de horas a certificar (${hours} ${hours === 1 ? 'hora' : 'horas'}). La hora de inicio y fin deben concordar con las horas certificables (p. ej., de 10:00 a 12:00 = 2 horas).` 
+      });
+      return;
+    }
+
     // 3. Validar que no sea en el pasado (con 5 min de gracia para que "ahora" sea válido)
     const grace = new Date(now.getTime() - 5 * 60 * 1000);
     if (startDateObj < grace) {
@@ -132,6 +145,19 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
     // 3. Validar horas académicas (1 o 2 horas)
     if (!hours || hours < 1 || hours > 2) {
       res.status(400).json({ message: 'Las horas académicas asignadas deben ser de 1 o máximo 2 horas.' });
+      return;
+    }
+
+    // 4. Validar que la duración calculada coincida exactamente con las horas a certificar
+    const durationMinutes = Math.round(durationMs / (1000 * 60));
+    const expectedMinutes = hours * 60;
+    if (Math.abs(durationMinutes - expectedMinutes) > 2) {
+      const durationFormatted = durationMinutes % 60 === 0 
+        ? `${durationMinutes / 60} ${durationMinutes / 60 === 1 ? 'hora' : 'horas'}`
+        : `${(durationMinutes / 60).toFixed(1)} horas`;
+      res.status(400).json({ 
+        message: `La duración del evento (${durationFormatted}) no coincide con el número de horas a certificar (${hours} ${hours === 1 ? 'hora' : 'horas'}). La hora de inicio y fin deben concordar con las horas certificables (p. ej., de 10:00 a 12:00 = 2 horas).` 
+      });
       return;
     }
 

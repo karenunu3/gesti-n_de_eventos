@@ -132,14 +132,88 @@ const AdminEvents = () => {
     }));
   };
 
+  const handleStartDateChange = (newStart: string) => {
+    setFormData(prev => {
+      const next = { ...prev, startDate: newStart };
+      if (newStart && prev.endDate) {
+        try {
+          const startObj = new Date(parseEcuadorDateTimeLocal(newStart));
+          const endObj = new Date(parseEcuadorDateTimeLocal(prev.endDate));
+          const diffMins = Math.round((endObj.getTime() - startObj.getTime()) / (1000 * 60));
+          if (diffMins === 60) next.hours = '1';
+          else if (diffMins === 120) next.hours = '2';
+        } catch {}
+      }
+      return next;
+    });
+  };
+
+  const handleEndDateChange = (newEnd: string) => {
+    setFormData(prev => {
+      const next = { ...prev, endDate: newEnd };
+      if (prev.startDate && newEnd) {
+        try {
+          const startObj = new Date(parseEcuadorDateTimeLocal(prev.startDate));
+          const endObj = new Date(parseEcuadorDateTimeLocal(newEnd));
+          const diffMins = Math.round((endObj.getTime() - startObj.getTime()) / (1000 * 60));
+          if (diffMins === 60) next.hours = '1';
+          else if (diffMins === 120) next.hours = '2';
+        } catch {}
+      }
+      return next;
+    });
+  };
+
+  const getDurationStatus = () => {
+    if (!formData.startDate || !formData.endDate) return null;
+    try {
+      const startObj = new Date(parseEcuadorDateTimeLocal(formData.startDate));
+      const endObj = new Date(parseEcuadorDateTimeLocal(formData.endDate));
+      if (isNaN(startObj.getTime()) || isNaN(endObj.getTime())) return null;
+
+      const durationMs = endObj.getTime() - startObj.getTime();
+      const diffMins = Math.round(durationMs / (1000 * 60));
+      const hoursNum = parseInt(formData.hours);
+
+      if (diffMins <= 0) {
+        return { isError: true, text: 'La fecha y hora de fin debe ser posterior a la fecha de inicio.' };
+      }
+      if (diffMins > 120) {
+        return { isError: true, text: `Duración del horario: ${Math.floor(diffMins/60)}h ${diffMins%60}m. ¡Supera el máximo permitido de 2 horas (120 min)!` };
+      }
+
+      const durationHoursFmt = diffMins % 60 === 0 ? `${diffMins / 60}` : `${(diffMins / 60).toFixed(1)}`;
+      
+      if (hoursNum && Math.abs(diffMins - hoursNum * 60) > 2) {
+        return {
+          isError: true,
+          text: `La duración del horario (${durationHoursFmt} ${diffMins === 60 ? 'hora' : 'horas'}) no coincide con las ${hoursNum} ${hoursNum === 1 ? 'hora' : 'horas'} a certificar.`
+        };
+      }
+
+      return {
+        isError: false,
+        text: `Horario válido: ${durationHoursFmt} ${diffMins === 60 ? 'hora' : 'horas'} de evento concordante con las horas a certificar.`
+      };
+    } catch {
+      return null;
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim()) return setToast({ type: 'error', text: 'El título es obligatorio.' });
     const startIso = parseEcuadorDateTimeLocal(formData.startDate);
     const endIso = parseEcuadorDateTimeLocal(formData.endDate);
-    const durationHours = (new Date(endIso).getTime() - new Date(startIso).getTime()) / (1000 * 60 * 60);
+    const startDateObj = new Date(startIso);
+    const endDateObj = new Date(endIso);
+    const durationMs = endDateObj.getTime() - startDateObj.getTime();
+    const durationMinutes = Math.round(durationMs / (1000 * 60));
 
-    if (durationHours > 2.001) {
+    if (startDateObj >= endDateObj) {
+      return setToast({ type: 'error', text: 'La fecha de inicio debe ser anterior a la fecha de fin.' });
+    }
+
+    if (durationMs > (2 * 60 * 60 * 1000 + 5000)) {
       return setToast({
         type: 'error',
         text: 'La duración del evento no puede superar las 2 horas (máximo 120 minutos). Por ejemplo, de 10:00 a 12:00.'
@@ -151,6 +225,17 @@ const AdminEvents = () => {
       return setToast({
         type: 'error',
         text: 'Las horas a certificar deben ser de 1 o máximo 2 horas.'
+      });
+    }
+
+    const expectedMinutes = hoursNum * 60;
+    if (Math.abs(durationMinutes - expectedMinutes) > 2) {
+      const durationFormatted = durationMinutes % 60 === 0 
+        ? `${durationMinutes / 60} ${durationMinutes / 60 === 1 ? 'hora' : 'horas'}`
+        : `${(durationMinutes / 60).toFixed(1)} horas`;
+      return setToast({
+        type: 'error',
+        text: `La duración del evento (${durationFormatted}) no coincide con las horas a certificar (${hoursNum} ${hoursNum === 1 ? 'hora' : 'horas'}). La hora de inicio y fin deben concordar exactamente (p. ej., de 10:00 a 12:00 = 2h).`
       });
     }
 
@@ -510,12 +595,26 @@ const AdminEvents = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Fecha Inicio</label>
-                <input required type="datetime-local" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
+                <input required type="datetime-local" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.startDate} onChange={e => handleStartDateChange(e.target.value)} />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Fecha Fin (Máx. 2h de diferencia)</label>
-                <input required type="datetime-local" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} />
+                <input required type="datetime-local" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.endDate} onChange={e => handleEndDateChange(e.target.value)} />
               </div>
+              {(() => {
+                const status = getDurationStatus();
+                if (!status) return null;
+                return (
+                  <div className={`md:col-span-2 p-3 rounded-xl text-xs font-semibold flex items-center gap-2 ${
+                    status.isError 
+                      ? 'bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400' 
+                      : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                  }`}>
+                    <Clock size={16} className="flex-shrink-0" />
+                    <span>{status.text}</span>
+                  </div>
+                );
+              })()}
               <div>
                 <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Cupo Máximo (Opcional)</label>
                 <input type="number" min="1" className="w-full border border-slate-200 dark:border-slate-600 p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-istpet-blue dark:focus:ring-istpet-gold" value={formData.capacity} onChange={e => setFormData({...formData, capacity: e.target.value})} />
