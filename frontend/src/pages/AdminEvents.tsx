@@ -440,8 +440,17 @@ const AdminEvents = () => {
 
                   {/* Actions */}
                   <div className="pt-2 grid grid-cols-2 gap-2">
-                    <button onClick={() => setShowQrModal(event.id)} className="col-span-2 py-2.5 px-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-all bg-istpet-gold hover:bg-istpet-gold-dark text-istpet-blue text-sm">
-                      <QrCode size={16} /> Proyectar QR
+                    <button
+                      onClick={() => !isPast(event) && setShowQrModal(event.id)}
+                      disabled={isPast(event)}
+                      title={isPast(event) ? 'Este evento ya finalizó. No se puede proyectar QR.' : 'Proyectar QR'}
+                      className={`col-span-2 py-2.5 px-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-all text-sm ${
+                        isPast(event)
+                          ? 'bg-slate-200 dark:bg-slate-700/60 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-600'
+                          : 'bg-istpet-gold hover:bg-istpet-gold-dark text-istpet-blue shadow-sm'
+                      }`}
+                    >
+                      <QrCode size={16} /> {isPast(event) ? 'QR Deshabilitado (Evento Finalizado)' : 'Proyectar QR'}
                     </button>
                     <button onClick={() => openAudit(event)} className="py-2 px-3 rounded-xl font-medium flex justify-center items-center gap-2 transition-colors bg-istpet-blue/10 dark:bg-slate-700 text-istpet-blue dark:text-slate-300 hover:bg-istpet-blue/20 dark:hover:bg-slate-600 text-xs">
                       <Users size={14} /> Asistencias
