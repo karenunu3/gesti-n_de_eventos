@@ -2,6 +2,7 @@ import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
 import fs from 'fs';
 import path from 'path';
+import { EMBEDDED_BG_BASE64 } from '../assets/certificate_bg_base64';
 
 const MONTHS_ES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -51,14 +52,17 @@ export const generateProfessionalCertificate = async (
         path.join(process.cwd(), 'dist/assets/certificate_background.png'),
         path.join(process.cwd(), 'backend/src/assets/certificate_background.png'),
         path.join(process.cwd(), 'backend/dist/assets/certificate_background.png'),
+        '/app/src/assets/certificate_background.png',
+        '/app/dist/assets/certificate_background.png',
       ];
 
       const bgPath = possibleBgPaths.find(p => fs.existsSync(p));
       if (bgPath) {
         doc.image(bgPath, 0, 0, { width, height });
       } else {
-        console.warn('certificate_background.png no fue encontrado en:', possibleBgPaths);
-        doc.rect(0, 0, width, height).fill('#FAFAFC');
+        // Fallback garantizado mediante Buffer Base64 embebido
+        const imgBuffer = Buffer.from(EMBEDDED_BG_BASE64, 'base64');
+        doc.image(imgBuffer, 0, 0, { width, height });
       }
 
       // === 1. NOMBRE DEL ALUMNO ===
